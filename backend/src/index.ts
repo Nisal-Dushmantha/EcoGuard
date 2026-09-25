@@ -17,13 +17,12 @@ if (!process.env.MONGODB_URI) {
 }
 
 const app: Application = express();
-const PORT = process.env.PORT || 5000;
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+const PORT = Number(process.env.PORT) || 5000;
 
-// Global Middleware
+// Global Middleware - allow all dev origins & credentials
 app.use(
   cors({
-    origin: [CLIENT_URL, 'http://localhost:5173', 'http://localhost:3000'],
+    origin: true,
     credentials: true,
   })
 );
@@ -59,12 +58,20 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
-// Start server and connect to database
-app.listen(PORT, async () => {
+// Start server listening on 0.0.0.0 to accept IPv4, IPv6 localhost, and LAN connections
+const server = app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 EcoGuard backend server running on http://localhost:${PORT}`);
   console.log(`💻 WebApp API:   http://localhost:${PORT}/api/webapp/status`);
   console.log(`📱 Mobile API:   http://localhost:${PORT}/api/mobile/status`);
   console.log(`📡 Health Check: http://localhost:${PORT}/api/health`);
 
   await connectDB();
+});
+
+server.on('error', (err: any) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} is already in use by another process. Please terminate it or set a different PORT in .env.`);
+  } else {
+    console.error('❌ Server startup error:', err);
+  }
 });

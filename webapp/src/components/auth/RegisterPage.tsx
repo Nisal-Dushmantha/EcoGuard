@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import type { UserRole } from '../../types/auth';
+import { authService } from '../../services/api';
 
 interface RegisterPageProps {
   onSwitchToLogin: () => void;
@@ -24,6 +25,23 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
   const [role, setRole] = useState<UserRole>('Park Manager');
   const [assignedPark, setAssignedPark] = useState(AVAILABLE_PARKS[0]);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+
+  useEffect(() => {
+    let isMounted = true;
+    const checkServer = async () => {
+      const health = await authService.checkHealth();
+      if (isMounted) {
+        setBackendStatus(health.online ? 'online' : 'offline');
+      }
+    };
+    checkServer();
+    const interval = setInterval(checkServer, 5000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +90,21 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
           <p className="auth-subtitle">
             Register personnel for Wildlife Conservation & Operations Management
           </p>
+
+          {/* Backend Connection Indicator */}
+          <div style={{ marginTop: '0.75rem', fontSize: '0.75rem' }}>
+            {backendStatus === 'online' ? (
+              <span style={{ color: '#34d399', background: 'rgba(16, 185, 129, 0.15)', padding: '0.2rem 0.6rem', borderRadius: '9999px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                🟢 Backend Online (Port 5000)
+              </span>
+            ) : backendStatus === 'offline' ? (
+              <span style={{ color: '#f87171', background: 'rgba(239, 68, 68, 0.15)', padding: '0.2rem 0.6rem', borderRadius: '9999px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                🔴 Backend Offline (Start server: cd backend; npm run dev)
+              </span>
+            ) : (
+              <span style={{ color: '#9ca3af' }}>Connecting to backend...</span>
+            )}
+          </div>
         </div>
 
         {activeError && (
