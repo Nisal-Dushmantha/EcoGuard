@@ -6,7 +6,7 @@ import cors from 'cors';
 import { connectDB } from './config/db.js';
 import healthRoutes from './modules/common/health.routes.js';
 import { webAppRoutes } from './modules/webapp/index.js';
-import { mobileRoutes } from './modules/mobile/index.js';
+import { mobileRoutes, incidentRoutes } from './modules/mobile/index.js';
 
 // Load environment variables (.env in current dir or root fallback)
 dotenv.config();
@@ -38,6 +38,9 @@ app.use('/api/webapp', webAppRoutes);
 
 // 3. Mobile Application Backend APIs
 app.use('/api/mobile', mobileRoutes);
+
+// 4. UC01 Ranger Incident Logging (Standard REST root)
+app.use('/api/incidents', incidentRoutes);
 
 // Root informational endpoint
 app.get('/', (_req: Request, res: Response) => {
