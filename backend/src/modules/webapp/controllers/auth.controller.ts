@@ -19,32 +19,7 @@ interface LocalUser {
   assignedPark: string;
 }
 
-const mockUsers: LocalUser[] = [
-  {
-    id: 'demo-pm-01',
-    name: 'Nisal Dushmantha',
-    email: 'manager@ecoguard.lk',
-    passwordHash: bcrypt.hashSync('password123', 10),
-    role: 'Park Manager',
-    assignedPark: 'Yala National Park',
-  },
-  {
-    id: 'demo-cr-02',
-    name: 'Dr. Senanayake',
-    email: 'researcher@ecoguard.lk',
-    passwordHash: bcrypt.hashSync('password123', 10),
-    role: 'Conservation Researcher',
-    assignedPark: 'Wilpattu National Park',
-  },
-  {
-    id: 'demo-adm-03',
-    name: 'Central Admin',
-    email: 'admin@ecoguard.lk',
-    passwordHash: bcrypt.hashSync('password123', 10),
-    role: 'Admin',
-    assignedPark: 'All Parks',
-  },
-];
+const mockUsers: LocalUser[] = [];
 
 const generateToken = (payload: AuthUserPayload): string => {
   return jwt.sign(payload, getJwtSecret(), { expiresIn: '7d' });
@@ -191,7 +166,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       }
     }
 
-    // 2. Check local fallback mock users (handles demo accounts or offline development)
+    // 2. Check local fallback mock users (handles offline development when DB is disconnected)
     const localUser = mockUsers.find((u) => u.email === normalizedEmail);
     if (localUser) {
       const isMatch = await bcrypt.compare(password, localUser.passwordHash);

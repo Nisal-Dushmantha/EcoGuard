@@ -244,28 +244,6 @@ body {
   border: 1px solid rgba(168, 85, 247, 0.3);
 }
 
-/* Demo account quick selector box */
-.demo-accounts-box {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border-subtle);
-}
-
-.demo-title {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-dim);
-  margin-bottom: 0.6rem;
-  text-align: center;
-}
-
-.demo-buttons-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-}
-
 /* Navbar */
 .app-navbar {
   background: rgba(11, 15, 25, 0.9);
