@@ -60,22 +60,6 @@ function MainApplication() {
                   Authenticated as <strong>{user.name}</strong> ({user.role}) • Stationed at <strong>{user.assignedPark}</strong>
                 </p>
               </div>
-
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <span
-                  style={{
-                    fontSize: '0.75rem',
-                    padding: '0.35rem 0.75rem',
-                    background: 'rgba(16, 185, 129, 0.15)',
-                    color: '#34d399',
-                    borderRadius: '6px',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                    fontWeight: 600,
-                  }}
-                >
-                  🟢 Role-Based Session Active
-                </span>
-              </div>
             </div>
 
             {/* UC04 Functional Conservation Module */}
