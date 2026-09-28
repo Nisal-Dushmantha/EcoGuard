@@ -46,18 +46,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
     }
   };
 
-  const handleQuickDemoLogin = async (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword('password123');
-    setLocalError(null);
-    clearError();
-    try {
-      await login(demoEmail, 'password123');
-    } catch (err: any) {
-      // error handled by AuthContext
-    }
-  };
-
   const activeError = localError || error;
 
   return (
@@ -105,7 +93,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
               id="login-email"
               type="email"
               className="form-input"
-              placeholder="e.g. manager@ecoguard.lk"
+              placeholder="e.g. user@ecoguard.lk"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
@@ -159,27 +147,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
           </button>
         </div>
 
-        <div className="demo-accounts-box">
-          <div className="demo-title">⚡ Quick Evaluator Demo Accounts</div>
-          <div className="demo-buttons-grid">
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => handleQuickDemoLogin('manager@ecoguard.lk')}
-              disabled={isLoading}
-            >
-              🌿 Park Manager
-            </button>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => handleQuickDemoLogin('researcher@ecoguard.lk')}
-              disabled={isLoading}
-            >
-              🔬 Researcher
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
