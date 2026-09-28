@@ -42,7 +42,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onSelectTab }) => {
           onClick={() => onSelectTab('reports')}
         >
           <span>📊</span>
-          <span>Conservation Reports (Nisal - UC04)</span>
+          <span>Conservation Reports</span>
         </button>
 
         <button
@@ -51,7 +51,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onSelectTab }) => {
           onClick={() => onSelectTab('monitoring')}
         >
           <span>📡</span>
-          <span>Wildlife Monitoring (Chamodya - UC02)</span>
+          <span>Wildlife Monitoring</span>
         </button>
       </nav>
 
