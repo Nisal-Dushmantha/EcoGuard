@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './components/auth/LoginPage';
 import { RegisterPage } from './components/auth/RegisterPage';
 import { Navbar } from './components/layout/Navbar';
+import { ConservationModule } from './components/analytics';
 
 function MainApplication() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -36,10 +37,10 @@ function MainApplication() {
           <div>
             {/* Role Header Banner */}
             <div
-              className="glass-panel"
+              className="glass-panel no-print"
               style={{
-                padding: '1.75rem',
-                marginBottom: '2rem',
+                padding: '1.25rem 1.75rem',
+                marginBottom: '1.5rem',
                 borderLeft: '4px solid var(--primary)',
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -52,18 +53,18 @@ function MainApplication() {
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Central Operations Portal • UC04 Module
                 </div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '0.25rem', color: 'var(--text-main)' }}>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginTop: '0.2rem', color: 'var(--text-main)' }}>
                   Conservation Analytics & Reporting Engine
                 </h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-                  Authenticated as <strong>{user.name}</strong> ({user.role}) for <strong>{user.assignedPark}</strong>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.2rem' }}>
+                  Authenticated as <strong>{user.name}</strong> ({user.role}) • Stationed at <strong>{user.assignedPark}</strong>
                 </p>
               </div>
 
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <span
                   style={{
-                    fontSize: '0.8rem',
+                    fontSize: '0.75rem',
                     padding: '0.35rem 0.75rem',
                     background: 'rgba(16, 185, 129, 0.15)',
                     color: '#34d399',
@@ -77,49 +78,12 @@ function MainApplication() {
               </div>
             </div>
 
-            {/* Role-Specific Content Overview */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-              <div className="glass-panel" style={{ padding: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                  <span style={{ fontSize: '1.5rem' }}>👤</span>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Active Role Permissions</h3>
-                </div>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1rem' }}>
-                  Your assigned role determines reporting and management clearance across the national park network.
-                </p>
-                <div style={{ background: 'var(--bg-input)', padding: '1rem', borderRadius: '8px', fontSize: '0.85rem' }}>
-                  <div style={{ marginBottom: '0.4rem' }}>
-                    <strong>Role:</strong> {user.role}
-                  </div>
-                  <div style={{ marginBottom: '0.4rem' }}>
-                    <strong>Assigned Zone:</strong> {user.assignedPark}
-                  </div>
-                  <div>
-                    <strong>Clearance:</strong>{' '}
-                    {user.role === 'Park Manager' || user.role === 'Admin'
-                      ? 'Full Access (Generate Reports, View Incident & Conflict Analytics, Resource Planning)'
-                      : user.role === 'Conservation Researcher'
-                      ? 'Analytical Access (Trend Analysis & Historical Records)'
-                      : 'Field Access (Incident Reporting & Field Patrols)'}
-                  </div>
-                </div>
-              </div>
-
-              <div className="glass-panel" style={{ padding: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                  <span style={{ fontSize: '1.5rem' }}>📋</span>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>UC04 Next Step</h3>
-                </div>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1rem' }}>
-                  Ready to generate formal conservation reports for <strong>{user.assignedPark}</strong> or all areas.
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                  <div>✓ Incident Statistics (UC01 Data Integration)</div>
-                  <div>✓ Patrol Coverage & Sector Analysis</div>
-                  <div>✓ Human-Wildlife Conflict Trends (UC03 Data Integration)</div>
-                </div>
-              </div>
-            </div>
+            {/* UC04 Functional Conservation Module */}
+            <ConservationModule
+              userPark={user.assignedPark}
+              userName={user.name}
+              userRole={user.role}
+            />
           </div>
         ) : (
           <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center' }}>

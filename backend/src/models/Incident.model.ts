@@ -31,6 +31,7 @@ export interface IIncident extends Document {
   syncSource: SyncSource;
   clientReferenceId: string;
   status: IncidentStatus;
+  park?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -120,6 +121,12 @@ const IncidentSchema = new Schema<IIncident>(
       default: 'Reported',
       index: true,
     },
+    park: {
+      type: String,
+      default: 'Yala National Park',
+      trim: true,
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -128,6 +135,7 @@ const IncidentSchema = new Schema<IIncident>(
 
 // Compound indexes for rapid field queries
 IncidentSchema.index({ rangerId: 1, reportedAt: -1 });
+IncidentSchema.index({ park: 1, reportedAt: -1 });
 
 export const Incident = mongoose.model<IIncident>('Incident', IncidentSchema);
 export default Incident;

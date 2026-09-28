@@ -382,3 +382,33 @@ body {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Print Styles for PDF / Paper Export */
+@media print {
+  .no-print,
+  .app-navbar,
+  .btn-logout {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  main {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .glass-panel {
+    background: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    box-shadow: none !important;
+    color: #111827 !important;
+  }
+
+  .printable-report {
+    color: #111827 !important;
+  }
+}
