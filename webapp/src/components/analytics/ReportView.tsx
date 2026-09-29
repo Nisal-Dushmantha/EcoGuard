@@ -61,7 +61,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
           flexWrap: 'wrap',
           gap: '1rem',
           padding: '1rem 1.5rem',
-          background: 'rgba(15, 23, 42, 0.65)',
+          background: 'var(--bg-panel-alt)',
           borderRadius: '10px',
           border: '1px solid var(--border-subtle)',
         }}
@@ -103,7 +103,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
           padding: '2rem',
           borderTop: '5px solid var(--primary)',
           borderRadius: '12px',
-          background: 'rgba(15, 23, 42, 0.85)',
+          background: 'var(--bg-panel-subtle)',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
@@ -304,7 +304,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem' }}>
                 <thead>
-                  <tr style={{ background: 'rgba(255, 255, 255, 0.04)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left' }}>
+                  <tr style={{ background: 'var(--table-hover)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left' }}>
                     <th style={{ padding: '0.6rem 0.75rem' }}>Incident ID</th>
                     <th style={{ padding: '0.6rem 0.75rem' }}>Type</th>
                     <th style={{ padding: '0.6rem 0.75rem' }}>Ranger</th>
@@ -315,7 +315,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
                 </thead>
                 <tbody>
                   {report.incidentStatistics.records.map((rec) => (
-                    <tr key={rec.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                    <tr key={rec.id} style={{ borderBottom: '1px solid var(--table-border)' }}>
                       <td style={{ padding: '0.6rem 0.75rem', fontFamily: 'monospace', color: 'var(--primary)' }}>{rec.id}</td>
                       <td style={{ padding: '0.6rem 0.75rem', fontWeight: 500 }}>{rec.type}</td>
                       <td style={{ padding: '0.6rem 0.75rem', color: 'var(--text-muted)' }}>{rec.ranger || 'Field Ranger'}</td>
@@ -409,7 +409,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem' }}>
                   <thead>
-                    <tr style={{ background: 'rgba(255, 255, 255, 0.04)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left' }}>
+                    <tr style={{ background: 'var(--table-hover)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left' }}>
                       <th style={{ padding: '0.6rem 0.75rem' }}>Patrol ID</th>
                       <th style={{ padding: '0.6rem 0.75rem' }}>Ranger In-Charge</th>
                       <th style={{ padding: '0.6rem 0.75rem' }}>Sector</th>
@@ -420,7 +420,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
                   </thead>
                   <tbody>
                     {report.patrolCoverage.records.map((p) => (
-                      <tr key={p.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                      <tr key={p.id} style={{ borderBottom: '1px solid var(--table-border)' }}>
                         <td style={{ padding: '0.6rem 0.75rem', fontFamily: 'monospace', color: '#60a5fa' }}>{p.id}</td>
                         <td style={{ padding: '0.6rem 0.75rem' }}>{p.ranger}</td>
                         <td style={{ padding: '0.6rem 0.75rem', color: 'var(--text-muted)' }}>{p.sector}</td>
@@ -510,7 +510,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem' }}>
                   <thead>
-                    <tr style={{ background: 'rgba(255, 255, 255, 0.04)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left' }}>
+                    <tr style={{ background: 'var(--table-hover)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left' }}>
                       <th style={{ padding: '0.6rem 0.75rem' }}>Report ID</th>
                       <th style={{ padding: '0.6rem 0.75rem' }}>Type</th>
                       <th style={{ padding: '0.6rem 0.75rem' }}>Species</th>
@@ -521,7 +521,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
                   </thead>
                   <tbody>
                     {report.conflictTrends.records.map((c) => (
-                      <tr key={c.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                      <tr key={c.id} style={{ borderBottom: '1px solid var(--table-border)' }}>
                         <td style={{ padding: '0.6rem 0.75rem', fontFamily: 'monospace', color: '#fbbf24' }}>{c.id}</td>
                         <td style={{ padding: '0.6rem 0.75rem', fontWeight: 500 }}>{c.type}</td>
                         <td style={{ padding: '0.6rem 0.75rem', color: 'var(--text-muted)' }}>{c.species}</td>

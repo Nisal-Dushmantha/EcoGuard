@@ -36,7 +36,7 @@ export const BarChart: React.FC<BarChartProps> = ({
               style={{
                 width: '100%',
                 height: '8px',
-                background: 'rgba(255, 255, 255, 0.06)',
+                background: 'var(--chart-bar-bg)',
                 borderRadius: '4px',
                 overflow: 'hidden',
               }}
@@ -253,7 +253,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({ parkName, items }) => {
   return (
     <div
       style={{
-        background: 'rgba(15, 23, 42, 0.65)',
+        background: 'var(--bg-panel-alt)',
         border: '1px solid var(--border-subtle)',
         borderRadius: '12px',
         padding: '1.25rem',
@@ -340,7 +340,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({ parkName, items }) => {
                     fontSize: '0.7rem',
                     padding: '0.15rem 0.45rem',
                     borderRadius: '4px',
-                    background: 'rgba(255, 255, 255, 0.08)',
+                    background: 'var(--badge-neutral-bg)',
                     color: 'var(--text-dim)',
                   }}
                 >

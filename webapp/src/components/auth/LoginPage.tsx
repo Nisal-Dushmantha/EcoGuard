@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/api';
+import { ThemeToggle } from '../layout/ThemeToggle';
 
 interface LoginPageProps {
   onSwitchToRegister: () => void;
@@ -51,6 +52,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
   return (
     <div className="auth-wrapper">
       <div className="auth-card glass-panel">
+        <div className="auth-top-actions">
+          <ThemeToggle />
+        </div>
         <div className="auth-header">
           <div className="auth-logo-badge">
             <span>🛡️</span>

@@ -357,7 +357,7 @@ export const ConservationDashboard: React.FC<ConservationDashboardProps> = ({
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
-                <tr style={{ background: 'rgba(255, 255, 255, 0.04)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left' }}>
+                <tr style={{ background: 'var(--table-hover)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left' }}>
                   <th style={{ padding: '0.75rem 1rem' }}>Sector / Location</th>
                   <th style={{ padding: '0.75rem 1rem' }}>Incidents Logged</th>
                   <th style={{ padding: '0.75rem 1rem' }}>Conflicts Logged</th>
@@ -367,7 +367,7 @@ export const ConservationDashboard: React.FC<ConservationDashboardProps> = ({
               </thead>
               <tbody>
                 {s.highRiskAreas.map((area, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                  <tr key={idx} style={{ borderBottom: '1px solid var(--table-border)' }}>
                     <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--text-main)' }}>
                       📍 {area.location}
                     </td>

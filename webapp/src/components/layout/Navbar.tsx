@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import type { UserRole } from '../../types/auth';
+import { ThemeToggle } from './ThemeToggle';
 
 interface NavbarProps {
   activeTab: 'reports' | 'monitoring';
@@ -56,6 +57,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onSelectTab }) => {
       </nav>
 
       <div className="user-badge-container">
+        <ThemeToggle />
+
         <div className="user-info">
           <div className="user-name">{user?.name}</div>
           <div className="user-park">📍 {user?.assignedPark}</div>

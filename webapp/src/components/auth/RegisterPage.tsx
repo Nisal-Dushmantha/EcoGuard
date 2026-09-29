@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import type { UserRole } from '../../types/auth';
 import { authService } from '../../services/api';
+import { ThemeToggle } from '../layout/ThemeToggle';
 
 interface RegisterPageProps {
   onSwitchToLogin: () => void;
@@ -81,6 +82,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
   return (
     <div className="auth-wrapper">
       <div className="auth-card glass-panel" style={{ maxWidth: '540px' }}>
+        <div className="auth-top-actions">
+          <ThemeToggle />
+        </div>
         <div className="auth-header">
           <div className="auth-logo-badge">
             <span>🛡️</span>
