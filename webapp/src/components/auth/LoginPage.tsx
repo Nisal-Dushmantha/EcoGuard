@@ -1,3 +1,5 @@
+import { AuthStory } from './AuthStory';
+import { BrandMark } from '../layout/BrandMark';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/api';
@@ -42,7 +44,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
 
     try {
       await login(email, password);
-    } catch (err: any) {
+    } catch {
       // error handled by AuthContext
     }
   };
@@ -50,34 +52,25 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
   const activeError = localError || error;
 
   return (
-    <div className="auth-wrapper">
+    <div className="auth-wrapper auth-layout">
+      <AuthStory />
       <div className="auth-card glass-panel">
         <div className="auth-top-actions">
           <ThemeToggle />
         </div>
         <div className="auth-header">
           <div className="auth-logo-badge">
-            <span>🛡️</span>
+            <BrandMark />
             <span>EcoGuard Operations</span>
           </div>
-          <h1 className="auth-title">Welcome Back</h1>
+          <h1 className="auth-title">Welcome back</h1>
           <p className="auth-subtitle">
             Sign in to access Central Wildlife Monitoring & Conservation Analytics
           </p>
 
-          {/* Backend Connection Indicator */}
-          <div style={{ marginTop: '0.75rem', fontSize: '0.75rem' }}>
-            {backendStatus === 'online' ? (
-              <span style={{ color: '#34d399', background: 'rgba(16, 185, 129, 0.15)', padding: '0.2rem 0.6rem', borderRadius: '9999px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-                🟢 Backend Online (Port 5000)
-              </span>
-            ) : backendStatus === 'offline' ? (
-              <span style={{ color: '#f87171', background: 'rgba(239, 68, 68, 0.15)', padding: '0.2rem 0.6rem', borderRadius: '9999px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-                🔴 Backend Offline (Start server: cd backend; npm run dev)
-              </span>
-            ) : (
-              <span style={{ color: '#9ca3af' }}>Connecting to backend...</span>
-            )}
+          <div className={`connection-status ${backendStatus}`} role="status">
+            <span className="status-dot" />
+            {backendStatus === 'online' ? 'Connected to EcoGuard' : backendStatus === 'offline' ? 'Service unavailable. Please try again shortly.' : 'Connecting to EcoGuard…'}
           </div>
         </div>
 
@@ -95,7 +88,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
             </label>
             <input
               id="login-email"
-              type="email"
+              type="email" autoComplete="email"
               className="form-input"
               placeholder="e.g. user@ecoguard.lk"
               value={email}
@@ -111,7 +104,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
             </label>
             <input
               id="login-password"
-              type="password"
+              type="password" autoComplete="current-password"
               className="form-input"
               placeholder="••••••••"
               value={password}

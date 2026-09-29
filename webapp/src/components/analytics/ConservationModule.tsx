@@ -8,15 +8,17 @@ import { ReportView } from './ReportView';
 interface ConservationModuleProps {
   userPark?: string;
   userName: string;
-  userRole: string;
+  view: 'dashboard' | 'generate';
+  onChangeView: (view: 'dashboard' | 'generate') => void;
 }
 
 export const ConservationModule: React.FC<ConservationModuleProps> = ({
   userPark,
   userName,
-  userRole,
+  view: subView,
+  onChangeView: setSubView,
 }) => {
-  const [subView, setSubView] = useState<'dashboard' | 'generate'>('dashboard');
+
 
   // Parks data
   const [parks, setParks] = useState<ParkConfig[]>([]);
@@ -101,68 +103,11 @@ export const ConservationModule: React.FC<ConservationModuleProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Module Navigation Tabs */}
-      <div
-        className="no-print"
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          borderBottom: '1px solid var(--border-subtle)',
-          paddingBottom: '1rem',
-        }}
-      >
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button
-            type="button"
-            className={`btn-secondary ${subView === 'dashboard' && !currentReport ? 'active-tab-btn' : ''}`}
-            onClick={() => {
-              setCurrentReport(null);
-              setSubView('dashboard');
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              background: subView === 'dashboard' && !currentReport ? 'var(--primary)' : undefined,
-              color: subView === 'dashboard' && !currentReport ? '#fff' : undefined,
-              border: subView === 'dashboard' && !currentReport ? '1px solid var(--primary)' : undefined,
-            }}
-          >
-            <span>📊</span>
-            <span>Analytics Dashboard</span>
-          </button>
-
-          <button
-            type="button"
-            className={`btn-secondary ${subView === 'generate' || currentReport ? 'active-tab-btn' : ''}`}
-            onClick={() => {
-              setSubView('generate');
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              background: subView === 'generate' || currentReport ? 'var(--primary)' : undefined,
-              color: subView === 'generate' || currentReport ? '#fff' : undefined,
-              border: subView === 'generate' || currentReport ? '1px solid var(--primary)' : undefined,
-            }}
-          >
-            <span>📝</span>
-            <span>{currentReport ? 'Generated Report' : 'Generate Report (UC04)'}</span>
-          </button>
-        </div>
-
-        <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)' }}>
-          Assigned to <strong>{userName}</strong> ({userRole}) • Central Operations
-        </div>
-      </div>
-
+      {subView === 'generate' && <div className="studio-heading no-print"><div className="section-kicker">FROM INSIGHT TO ACTION</div><h1>Report studio<span className="heading-dot">.</span></h1><p>A focused view of your park. Select a scope, choose your sections, and make the data useful.</p></div>}
       {/* Main View Area */}
-      {subView === 'dashboard' && !currentReport ? (
+      {subView === 'dashboard' ? (
         <ConservationDashboard
+          userName={userName}
           summary={summary}
           isLoading={isSummaryLoading}
           error={summaryError}

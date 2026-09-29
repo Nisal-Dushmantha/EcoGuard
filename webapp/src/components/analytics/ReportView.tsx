@@ -20,7 +20,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
           borderRadius: '12px',
         }}
       >
-        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
+        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
         <h3 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
           No conservation data found for the selected criteria.
         </h3>
@@ -34,7 +34,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
           onClick={onRegenerate}
           style={{ padding: '0.75rem 1.75rem' }}
         >
-          🔄 Modify Criteria & Try Again
+           Modify Criteria & Try Again
         </button>
       </div>
     );
@@ -67,7 +67,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '1.25rem' }}>📋</span>
+          <span style={{ fontSize: '1.25rem' }}></span>
           <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-main)' }}>
             Report Reference: <span style={{ color: 'var(--primary)', fontFamily: 'monospace' }}>{report.reportId}</span>
           </span>
@@ -80,7 +80,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
             onClick={onRegenerate}
             style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}
           >
-            <span>🔄</span>
+            <span></span>
             <span>Regenerate Report</span>
           </button>
 
@@ -90,7 +90,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
             onClick={handlePrint}
             style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}
           >
-            <span>🖨️</span>
+            <span></span>
             <span>Print / Save PDF</span>
           </button>
         </div>
@@ -109,7 +109,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-              <span style={{ fontSize: '1.5rem' }}>🛡️</span>
+              <span style={{ fontSize: '1.5rem' }}></span>
               <span style={{ fontSize: '0.8rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
                 Department of Wildlife Conservation • EcoGuard
               </span>
@@ -231,7 +231,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
       {report.sections.includes('incidentStatistics') && report.incidentStatistics && (
         <div className="glass-panel" style={{ padding: '2rem', borderRadius: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
-            <span style={{ fontSize: '1.35rem' }}>🚨</span>
+            <span style={{ fontSize: '1.35rem' }}></span>
             <h2 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
               1. Incident Statistics
             </h2>
@@ -250,7 +250,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
             </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '2rem', marginBottom: '2rem' }}>
             {/* By Type */}
             <div style={{ background: 'var(--bg-input)', padding: '1.25rem', borderRadius: '8px' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-main)' }}>
@@ -299,7 +299,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
           {/* Detailed Records Table */}
           <div style={{ marginTop: '2rem' }}>
             <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--text-main)' }}>
-              Incident Audit Log (Field Logs from Mobile UC01)
+              Incident Audit Log
             </h4>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem' }}>
@@ -352,7 +352,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
       {report.sections.includes('patrolCoverage') && report.patrolCoverage && (
         <div className="glass-panel" style={{ padding: '2rem', borderRadius: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
-            <span style={{ fontSize: '1.35rem' }}>🛡️</span>
+            <span style={{ fontSize: '1.35rem' }}></span>
             <h2 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
               2. Patrol Coverage
             </h2>
@@ -371,7 +371,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
             </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '2rem', marginBottom: '2rem' }}>
             <div style={{ background: 'var(--bg-input)', padding: '1.25rem', borderRadius: '8px' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-main)' }}>
                 Patrol Missions by Sector
@@ -453,7 +453,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
       {report.sections.includes('conflictTrends') && report.conflictTrends && (
         <div className="glass-panel" style={{ padding: '2rem', borderRadius: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
-            <span style={{ fontSize: '1.35rem' }}>🐘</span>
+            <span style={{ fontSize: '1.35rem' }}></span>
             <h2 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
               3. Human-Wildlife Conflict Trends
             </h2>
@@ -468,11 +468,11 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onRegenerate }) 
                 border: '1px solid rgba(245, 158, 11, 0.3)',
               }}
             >
-              {report.conflictTrends.totalConflicts} Incidents (UC03)
+              {report.conflictTrends.totalConflicts} Incidents
             </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '2rem', marginBottom: '2rem' }}>
             <div style={{ background: 'var(--bg-input)', padding: '1.25rem', borderRadius: '8px' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-main)' }}>
                 Conflict Incidents by Species

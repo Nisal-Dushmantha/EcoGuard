@@ -1,3 +1,5 @@
+import { AuthStory } from './AuthStory';
+import { BrandMark } from '../layout/BrandMark';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import type { UserRole } from '../../types/auth';
@@ -72,7 +74,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
         role,
         assignedPark,
       });
-    } catch (err: any) {
+    } catch {
       // handled by AuthContext
     }
   };
@@ -80,34 +82,25 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
   const activeError = localError || error;
 
   return (
-    <div className="auth-wrapper">
+    <div className="auth-wrapper auth-layout">
+      <AuthStory />
       <div className="auth-card glass-panel" style={{ maxWidth: '540px' }}>
         <div className="auth-top-actions">
           <ThemeToggle />
         </div>
         <div className="auth-header">
           <div className="auth-logo-badge">
-            <span>🛡️</span>
+            <BrandMark />
             <span>EcoGuard Registration</span>
           </div>
-          <h1 className="auth-title">Create Official Account</h1>
+          <h1 className="auth-title">Join your conservation team</h1>
           <p className="auth-subtitle">
             Register personnel for Wildlife Conservation & Operations Management
           </p>
 
-          {/* Backend Connection Indicator */}
-          <div style={{ marginTop: '0.75rem', fontSize: '0.75rem' }}>
-            {backendStatus === 'online' ? (
-              <span style={{ color: '#34d399', background: 'rgba(16, 185, 129, 0.15)', padding: '0.2rem 0.6rem', borderRadius: '9999px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-                🟢 Backend Online (Port 5000)
-              </span>
-            ) : backendStatus === 'offline' ? (
-              <span style={{ color: '#f87171', background: 'rgba(239, 68, 68, 0.15)', padding: '0.2rem 0.6rem', borderRadius: '9999px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-                🔴 Backend Offline (Start server: cd backend; npm run dev)
-              </span>
-            ) : (
-              <span style={{ color: '#9ca3af' }}>Connecting to backend...</span>
-            )}
+          <div className={`connection-status ${backendStatus}`} role="status">
+            <span className="status-dot" />
+            {backendStatus === 'online' ? 'Connected to EcoGuard' : backendStatus === 'offline' ? 'Service unavailable. Please try again shortly.' : 'Connecting to EcoGuard…'}
           </div>
         </div>
 
@@ -141,7 +134,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
             </label>
             <input
               id="reg-email"
-              type="email"
+              type="email" autoComplete="email"
               className="form-input"
               placeholder="e.g. nisal@ecoguard.lk"
               value={email}
@@ -151,7 +144,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="reg-role">
                 System Role
@@ -163,10 +156,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
                 onChange={(e) => setRole(e.target.value as UserRole)}
                 disabled={isLoading}
               >
-                <option value="Park Manager">🌿 Park Manager (UC04)</option>
-                <option value="Conservation Researcher">🔬 Conservation Researcher</option>
-                <option value="Ranger">🧭 Ranger / Field Officer</option>
-                <option value="Admin">⚙️ System Administrator</option>
+                <option value="Park Manager">Park Manager</option>
+                <option value="Conservation Researcher">Conservation Researcher</option>
+                <option value="Ranger">Ranger / Field Officer</option>
+                <option value="Admin">System Administrator</option>
               </select>
             </div>
 
@@ -190,14 +183,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="reg-password">
                 Password (min 6 chars)
               </label>
               <input
                 id="reg-password"
-                type="password"
+                type="password" autoComplete="new-password"
                 className="form-input"
                 placeholder="••••••••"
                 value={password}
@@ -213,7 +206,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
               </label>
               <input
                 id="reg-confirm"
-                type="password"
+                type="password" autoComplete="new-password"
                 className="form-input"
                 placeholder="••••••••"
                 value={confirmPassword}

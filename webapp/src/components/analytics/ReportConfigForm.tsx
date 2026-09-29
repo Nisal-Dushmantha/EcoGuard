@@ -1,3 +1,4 @@
+import { Icon } from '../layout/Icon';
 import React, { useState } from 'react';
 import type { ParkConfig, ReportCriteria, ReportSectionType } from '../../types/reports';
 
@@ -101,16 +102,16 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
   const activeError = localError || validationError;
 
   return (
-    <div className="glass-panel" style={{ padding: '2rem', border: '1px solid var(--border-subtle)', borderRadius: '12px' }}>
+    <div className="glass-panel report-config" style={{ padding: '2rem', border: '1px solid var(--border-subtle)', borderRadius: '12px' }}>
       <div style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span style={{ fontSize: '1.5rem' }}>⚙️</span>
+          <span className="studio-icon"><Icon name="report" size={25}/></span>
           <div>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)' }}>
-              Configure Conservation Report
+              Build your conservation report
             </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-              Select national park, reporting period, location, and required analytical sections (UC04)
+              Select national park, reporting period, location, and required analytical sections
             </p>
           </div>
         </div>
@@ -125,14 +126,14 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
             borderRadius: '8px',
             background: 'rgba(239, 68, 68, 0.15)',
             border: '1px solid rgba(239, 68, 68, 0.3)',
-            color: '#f87171',
+            color: 'var(--alert-err-text)',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
             fontSize: '0.875rem',
           }}
         >
-          <span>⚠️</span>
+          <Icon name="alert" size={16}/>
           <span>{activeError}</span>
         </div>
       )}
@@ -141,7 +142,7 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
         {/* Step 1: Select Park */}
         <div className="form-group">
           <label className="form-label" htmlFor="park-select" style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span>🏞️</span>
+            <Icon name="pin" size={16}/>
             <span>1. National Park</span>
           </label>
           <select
@@ -165,10 +166,10 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
         </div>
 
         {/* Step 2: Date Range */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem' }}>
           <div className="form-group">
             <label className="form-label" htmlFor="start-date" style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span>📅</span>
+              <Icon name="report" size={16}/>
               <span>2. Start Date</span>
             </label>
             <input
@@ -188,7 +189,7 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
 
           <div className="form-group">
             <label className="form-label" htmlFor="end-date" style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span>📅</span>
+              <Icon name="report" size={16}/>
               <span>End Date</span>
             </label>
             <input
@@ -210,7 +211,7 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
         {/* Step 3: Location / All Areas */}
         <div className="form-group">
           <label className="form-label" htmlFor="location-select" style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span>📍</span>
+            <Icon name="pin" size={16}/>
             <span>3. Sector / Location</span>
           </label>
           <select
@@ -235,10 +236,10 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
         {/* Step 4: Report Sections Selection */}
         <div className="form-group">
           <label className="form-label" style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
-            <span>📑</span>
+            <Icon name="grid" size={16}/>
             <span>4. Required Report Sections (Select one or more)</span>
           </label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '0.75rem' }}>
             {/* Section 1: Incident Statistics */}
             <label
               style={{
@@ -246,7 +247,7 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
                 alignItems: 'flex-start',
                 gap: '0.75rem',
                 padding: '0.85rem 1rem',
-                background: sections.includes('incidentStatistics') ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-input)',
+                background: sections.includes('incidentStatistics') ? 'var(--primary-subtle)' : 'var(--bg-input)',
                 border: `1px solid ${sections.includes('incidentStatistics') ? 'var(--primary)' : 'var(--border-subtle)'}`,
                 borderRadius: '8px',
                 cursor: 'pointer',
@@ -262,7 +263,7 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
               />
               <div>
                 <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-main)' }}>
-                  🚨 Incident Statistics
+                  Incident statistics
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
                   Anti-poaching logs, snares, carcass detections & violation types
@@ -277,8 +278,8 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
                 alignItems: 'flex-start',
                 gap: '0.75rem',
                 padding: '0.85rem 1rem',
-                background: sections.includes('patrolCoverage') ? 'rgba(59, 130, 246, 0.1)' : 'var(--bg-input)',
-                border: `1px solid ${sections.includes('patrolCoverage') ? '#3b82f6' : 'var(--border-subtle)'}`,
+                background: sections.includes('patrolCoverage') ? 'var(--primary-subtle)' : 'var(--bg-input)',
+                border: `1px solid ${sections.includes('patrolCoverage') ? 'var(--primary)' : 'var(--border-subtle)'}`,
                 borderRadius: '8px',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
@@ -289,11 +290,11 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
                 checked={sections.includes('patrolCoverage')}
                 onChange={() => handleToggleSection('patrolCoverage')}
                 disabled={isLoading}
-                style={{ marginTop: '0.2rem', accentColor: '#3b82f6' }}
+                style={{ marginTop: '0.2rem', accentColor: 'var(--primary)' }}
               />
               <div>
                 <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-main)' }}>
-                  🛡️ Patrol Coverage
+                  Patrol coverage
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
                   Ranger patrol hours, distance traversed & sector distribution
@@ -308,8 +309,8 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
                 alignItems: 'flex-start',
                 gap: '0.75rem',
                 padding: '0.85rem 1rem',
-                background: sections.includes('conflictTrends') ? 'rgba(245, 158, 11, 0.1)' : 'var(--bg-input)',
-                border: `1px solid ${sections.includes('conflictTrends') ? '#f59e0b' : 'var(--border-subtle)'}`,
+                background: sections.includes('conflictTrends') ? 'var(--primary-subtle)' : 'var(--bg-input)',
+                border: `1px solid ${sections.includes('conflictTrends') ? 'var(--primary)' : 'var(--border-subtle)'}`,
                 borderRadius: '8px',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
@@ -320,11 +321,11 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
                 checked={sections.includes('conflictTrends')}
                 onChange={() => handleToggleSection('conflictTrends')}
                 disabled={isLoading}
-                style={{ marginTop: '0.2rem', accentColor: '#f59e0b' }}
+                style={{ marginTop: '0.2rem', accentColor: 'var(--primary)' }}
               />
               <div>
                 <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-main)' }}>
-                  🐘 Human-Wildlife Conflicts
+                  Human–wildlife conflicts
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
                   Community dispute logs, crop raiding, species & severity trends
@@ -355,7 +356,7 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
               </>
             ) : (
               <>
-                <span>📊</span>
+                <Icon name="report" size={18}/>
                 <span>Generate Report</span>
               </>
             )}

@@ -65,7 +65,7 @@ interface DonutChartProps {
   emptyMessage?: string;
 }
 
-const DEFAULT_PALETTE = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+const DEFAULT_PALETTE = ['#62836b', '#b2c78d', '#d7b575', '#bb7967', '#779da3', '#989284'];
 
 export const DonutChart: React.FC<DonutChartProps> = ({
   data,
@@ -90,7 +90,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   }
 
   // Calculate SVG circular stroke dashes
-  let accumulatedAngle = 0;
+
   const size = 140;
   const strokeWidth = 24;
   const radius = (size - strokeWidth) / 2;
@@ -102,8 +102,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
         {data.map((item, idx) => {
           const ratio = item.value / total;
           const strokeDasharray = `${ratio * circumference} ${circumference}`;
-          const strokeDashoffset = -accumulatedAngle * circumference;
-          accumulatedAngle += ratio;
+          const strokeDashoffset = -data.slice(0, idx).reduce((sum, entry) => sum + entry.value, 0) / total * circumference;
           const strokeColor = colors[idx % colors.length];
 
           return (
@@ -117,7 +116,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
               strokeWidth={strokeWidth}
               strokeDasharray={strokeDasharray}
               strokeDashoffset={strokeDashoffset}
-              strokeLinecap="round"
+              strokeLinecap="butt"
             />
           );
         })}
