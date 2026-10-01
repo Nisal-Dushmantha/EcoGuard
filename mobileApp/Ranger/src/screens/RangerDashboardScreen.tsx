@@ -15,6 +15,7 @@ import { getGreetingByTime } from '../utils/helpers';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useIncidentSync } from '../hooks/useIncidentSync';
 import { IncidentStorageService } from '../services/incidentStorage';
+import { authService } from '../services/authService';
 
 interface RangerDashboardScreenProps {
   navigation: any;
@@ -57,6 +58,11 @@ export const RangerDashboardScreen: React.FC<RangerDashboardScreenProps> = ({ na
     setRefreshing(false);
   };
 
+  const handleLogout = async () => {
+    await authService.logout();
+    navigation.replace('Login');
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppHeader
@@ -79,9 +85,9 @@ export const RangerDashboardScreen: React.FC<RangerDashboardScreenProps> = ({ na
       >
         {/* Ranger Profile Status Strip */}
         <View style={styles.rangerStrip}>
-          <View style={styles.rangerAvatar}>
+          <TouchableOpacity style={styles.rangerAvatar} onPress={handleLogout}>
             <Text style={styles.avatarText}>RN</Text>
-          </View>
+          </TouchableOpacity>
           <View style={styles.rangerInfo}>
             <Text style={styles.rangerName}>Ranger K. Bandara</Text>
             <Text style={styles.rangerMeta}>Yala National Park • Sector 4</Text>

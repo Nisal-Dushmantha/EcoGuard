@@ -12,6 +12,7 @@ import { MyIncidentsScreen } from '../screens/MyIncidentsScreen';
 import { IncidentDetailsScreen } from '../screens/IncidentDetailsScreen';
 import { SyncStatusScreen } from '../screens/SyncStatusScreen';
 import { AlertsScreen } from '../screens/AlertsScreen';
+import { ConflictOperationsHome } from '../screens/ConflictOperationsHome';
 import { LocalIncidentRecord } from '../types/incident';
 
 // Navigation state container supporting standalone and React Navigation environments
@@ -94,6 +95,8 @@ export const RangerNavigator: React.FC = () => {
             navigation={navigation}
           />
         );
+      case 'ConflictOperationsHome':
+        return <ConflictOperationsHome navigation={navigation} />;
       case 'SyncStatus':
         return <SyncStatusScreen navigation={navigation} />;
       case 'MyIncidents':
@@ -101,7 +104,6 @@ export const RangerNavigator: React.FC = () => {
       case 'Alerts':
         return <AlertsScreen navigation={navigation} />;
       case 'RangerHome':
-      case 'ConflictOperationsHome':
       case 'RangerDashboard':
       default:
         return <RangerDashboardScreen navigation={navigation} />;

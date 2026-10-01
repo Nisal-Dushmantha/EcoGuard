@@ -6,6 +6,7 @@ import {
 
 import incidentRoutes from './incident.routes.js';
 import { rangerLogin } from '../controllers/incident.controller.js';
+import conflictRoutes from './conflict.routes.js';
 
 const router = Router();
 
@@ -20,5 +21,8 @@ router.post('/auth/login', rangerLogin);
 
 // Mount UC01 Incident Logging Routes under /api/mobile/incidents
 router.use('/incidents', incidentRoutes);
+
+// Mount Conflict Operations Routes under /api/mobile/conflicts
+router.use('/conflicts', conflictRoutes);
 
 export default router;

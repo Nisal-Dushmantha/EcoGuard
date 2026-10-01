@@ -62,12 +62,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       if (onLoginSuccess) {
         onLoginSuccess(result.user);
       }
-      if (result.user.role === 'Community Liaison Officer') {
+      const role = result.user.role;
+      if (role === 'Community Liaison Officer') {
         navigation.replace('ConflictOperationsHome');
-      } else if (result.user.role === 'Ranger') {
-        navigation.replace('RangerHome');
-      } else {
+      } else if (role === 'Ranger') {
         navigation.replace('RangerMainTabs');
+      } else if (role === 'Park Manager') {
+        navigation.replace('RangerMainTabs');
+      } else {
+        await authService.logout();
+        setError(`Access Denied: The role '${role}' is not supported on the mobile app.`);
       }
     } catch (err: any) {
       setError(err.message || 'Login failed. Please verify credentials.');

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { THEME } from '../constants/theme';
+import { authService } from '../services/authService';
 
 interface SplashScreenProps {
   navigation: any;
@@ -41,8 +42,22 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ navigation }) => {
     return () => clearTimeout(timer);
   }, [fadeAnim]);
 
-  const handleGetStarted = () => {
-    navigation.replace('Login');
+  const handleGetStarted = async () => {
+    setIsInitializing(true);
+    const hasAuth = await authService.loadStoredAuth();
+    if (hasAuth && authService.userRole) {
+      if (authService.userRole === 'Community Liaison Officer') {
+        navigation.replace('ConflictOperationsHome');
+      } else if (authService.userRole === 'Ranger') {
+        navigation.replace('RangerMainTabs');
+      } else if (authService.userRole === 'Park Manager') {
+        navigation.replace('RangerMainTabs');
+      } else {
+        navigation.replace('Login');
+      }
+    } else {
+      navigation.replace('Login');
+    }
   };
 
   return (
