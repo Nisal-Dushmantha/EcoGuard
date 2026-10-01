@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { THEME } from '../constants/theme';
-import { RangerLoginScreen } from '../screens/RangerLoginScreen';
+import { LoginScreen } from '../screens/LoginScreen';
+import { RegisterScreen } from '../screens/RegisterScreen';
+import { SplashScreen } from '../screens/SplashScreen';
 import { RangerDashboardScreen } from '../screens/RangerDashboardScreen';
 import { LogIncidentScreen } from '../screens/LogIncidentScreen';
 import { IncidentSuccessScreen } from '../screens/IncidentSuccessScreen';
@@ -13,8 +16,7 @@ import { LocalIncidentRecord } from '../types/incident';
 
 // Navigation state container supporting standalone and React Navigation environments
 export const RangerNavigator: React.FC = () => {
-  // Current screen state
-  const [currentScreen, setCurrentScreen] = useState<string>('RangerDashboard'); // Default to dashboard or login
+  const [currentScreen, setCurrentScreen] = useState<string>('Splash'); // Default to splash
   const [activeTab, setActiveTab] = useState<'Home' | 'Incidents' | 'Alerts'>('Home');
   const [screenParams, setScreenParams] = useState<any>({});
   const [screenHistory, setScreenHistory] = useState<string[]>(['RangerDashboard']);
@@ -39,10 +41,10 @@ export const RangerNavigator: React.FC = () => {
     },
     replace: (screen: string, params?: any) => {
       if (params) setScreenParams(params);
-      if (screen === 'RangerMainTabs') {
+      if (screen === 'RangerMainTabs' || screen === 'RangerHome' || screen === 'ConflictOperationsHome') {
         setActiveTab('Home');
-        setCurrentScreen('RangerDashboard');
-        setScreenHistory(['RangerDashboard']);
+        setCurrentScreen(screen);
+        setScreenHistory([screen]);
       } else {
         setCurrentScreen(screen);
       }
@@ -70,8 +72,12 @@ export const RangerNavigator: React.FC = () => {
 
   const renderScreen = () => {
     switch (currentScreen) {
-      case 'RangerLogin':
-        return <RangerLoginScreen navigation={navigation} />;
+      case 'Splash':
+        return <SplashScreen navigation={navigation} />;
+      case 'Login':
+        return <LoginScreen navigation={navigation} />;
+      case 'Register':
+        return <RegisterScreen navigation={navigation} />;
       case 'LogIncident':
         return <LogIncidentScreen navigation={navigation} />;
       case 'IncidentSuccess':
@@ -94,6 +100,8 @@ export const RangerNavigator: React.FC = () => {
         return <MyIncidentsScreen navigation={navigation} />;
       case 'Alerts':
         return <AlertsScreen navigation={navigation} />;
+      case 'RangerHome':
+      case 'ConflictOperationsHome':
       case 'RangerDashboard':
       default:
         return <RangerDashboardScreen navigation={navigation} />;
