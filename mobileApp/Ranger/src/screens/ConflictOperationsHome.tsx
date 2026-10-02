@@ -5,10 +5,10 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { THEME } from '../constants/theme';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { conflictApi } from '../services/conflictApi';
@@ -22,11 +22,14 @@ interface ConflictOperationsHomeProps {
 export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ navigation }) => {
   const { isConnected } = useNetworkStatus();
   
-  const [summary, setSummary] = useState({
-    pending: 0,
-    verified: 0,
-    dispatched: 0,
-    needsAttention: [] as any[],
+  const [summary, setSummary] = useState<any>({
+    officer: null,
+    stats: {
+      pending: 0,
+      verified: 0,
+      dispatched: 0,
+    },
+    reports: [] as any[],
   });
   
   const [loading, setLoading] = useState(true);
@@ -102,7 +105,9 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
             <View style={styles.notificationBadge}><Text style={styles.badgeText}>2</Text></View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.avatarCircle} onPress={handleLogout}>
-            <Text style={styles.avatarText}>OJ</Text>
+            <Text style={styles.avatarText}>
+              {summary?.officer?.name ? summary.officer.name.substring(0, 2).toUpperCase() : 'CO'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -125,10 +130,10 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
               <Text style={styles.calendarIcon}>📅</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.officerGreeting}>Good morning, Officer Jayawardena</Text>
+          <Text style={styles.officerGreeting}>Good morning, {summary?.officer?.name || 'Officer'}</Text>
           <View style={styles.officerLocation}>
             <Text style={styles.locationIcon}>📍</Text>
-            <Text style={styles.locationText}>Sector North-Central - Active Duty</Text>
+            <Text style={styles.locationText}>{summary?.officer?.assignedPark || 'Unknown Park'} - Active Duty</Text>
           </View>
         </View>
 
@@ -158,7 +163,7 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
                   <Text style={[styles.statIcon, { color: '#F59E0B' }]}>🕒</Text>
                   <View style={[styles.statDot, { backgroundColor: '#F59E0B' }]} />
                 </View>
-                <Text style={styles.statNumber}>{summary.pending}</Text>
+                <Text style={styles.statNumber}>{summary?.stats?.pending || 0}</Text>
                 <Text style={styles.statLabel}>PENDING</Text>
               </View>
               
@@ -167,7 +172,7 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
                   <Text style={[styles.statIcon, { color: '#3B82F6' }]}>🛡️</Text>
                   <View style={[styles.statDot, { backgroundColor: '#3B82F6' }]} />
                 </View>
-                <Text style={styles.statNumber}>{summary.verified}</Text>
+                <Text style={styles.statNumber}>{summary?.stats?.verified || 0}</Text>
                 <Text style={styles.statLabel}>VERIFIED</Text>
               </View>
               
@@ -176,7 +181,7 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
                   <Text style={[styles.statIcon, { color: '#8B5CF6' }]}>🚚</Text>
                   <View style={[styles.statDot, { backgroundColor: '#8B5CF6' }]} />
                 </View>
-                <Text style={styles.statNumber}>{summary.dispatched}</Text>
+                <Text style={styles.statNumber}>{summary?.stats?.dispatched || 0}</Text>
                 <Text style={styles.statLabel}>DISPATCHED</Text>
               </View>
             </View>
@@ -187,21 +192,21 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
                 <View style={styles.redDot} />
                 <Text style={styles.sectionTitle}>Needs Attention</Text>
               </View>
-              {summary.needsAttention.filter(r => r.severity === 'Critical' || r.severity === 'High').length > 0 && (
+              {summary?.reports?.filter((r: any) => r.severity === 'Critical' || r.severity === 'High').length > 0 && (
                 <View style={styles.criticalBadge}>
                   <Text style={styles.criticalBadgeText}>
-                    {summary.needsAttention.filter(r => r.severity === 'Critical' || r.severity === 'High').length} CRITICAL
+                    {summary.reports.filter((r: any) => r.severity === 'Critical' || r.severity === 'High').length} CRITICAL
                   </Text>
                 </View>
               )}
             </View>
 
-            {summary.needsAttention.length === 0 ? (
+            {summary?.reports?.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateText}>No pending conflict reports.</Text>
               </View>
             ) : (
-              summary.needsAttention.map((report: any, index: number) => {
+              summary?.reports?.map((report: any, index: number) => {
                 const timeAgo = Math.max(1, Math.round((new Date().getTime() - new Date(report.reportedAt).getTime()) / 60000));
                 
                 return (
@@ -271,11 +276,11 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
               })
             )}
 
-            <TouchableOpacity style={styles.viewAllBtn}>
+            <TouchableOpacity style={styles.viewAllBtn} onPress={() => navigation.navigate('PendingReports')}>
               <Text style={styles.viewAllIcon}>📄</Text>
               <Text style={styles.viewAllText}>VIEW ALL PENDING REPORTS</Text>
               <View style={styles.viewAllBadge}>
-                <Text style={styles.viewAllBadgeText}>{summary.pending}</Text>
+                <Text style={styles.viewAllBadgeText}>{summary?.stats?.pending || 0}</Text>
               </View>
             </TouchableOpacity>
           </>
@@ -288,7 +293,7 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
           <Text style={styles.navIconActive}>🛡</Text>
           <Text style={styles.navLabelActive}>Operations</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('IncidentsTab')}>
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('PendingReports')}>
           <Text style={styles.navIcon}>📋</Text>
           <Text style={styles.navLabel}>Reports</Text>
         </TouchableOpacity>

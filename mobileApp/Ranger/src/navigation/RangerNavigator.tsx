@@ -13,6 +13,11 @@ import { IncidentDetailsScreen } from '../screens/IncidentDetailsScreen';
 import { SyncStatusScreen } from '../screens/SyncStatusScreen';
 import { AlertsScreen } from '../screens/AlertsScreen';
 import { ConflictOperationsHome } from '../screens/ConflictOperationsHome';
+import { PendingReportsScreen } from '../screens/PendingReportsScreen';
+import { ConflictReportDetailsScreen } from '../screens/ConflictReportDetailsScreen';
+import { VerifyConfirmScreen } from '../screens/VerifyConfirmScreen';
+import { AvailableRangerSelection } from '../screens/AvailableRangerSelection'; // force reparse
+import { ConfirmAssignmentScreen } from '../screens/ConfirmAssignmentScreen';
 import { LocalIncidentRecord } from '../types/incident';
 
 // Navigation state container supporting standalone and React Navigation environments
@@ -97,6 +102,36 @@ export const RangerNavigator: React.FC = () => {
         );
       case 'ConflictOperationsHome':
         return <ConflictOperationsHome navigation={navigation} />;
+      case 'PendingReports':
+        return <PendingReportsScreen navigation={navigation} />;
+      case 'ConflictReportDetails':
+        return (
+          <ConflictReportDetailsScreen
+            route={{ params: screenParams }}
+            navigation={navigation}
+          />
+        );
+      case 'VerifyConfirm':
+        return (
+          <VerifyConfirmScreen
+            route={{ params: screenParams }}
+            navigation={navigation}
+          />
+        );
+      case 'AvailableRangerSelection':
+        return (
+          <AvailableRangerSelection
+            route={{ params: screenParams }}
+            navigation={navigation}
+          />
+        );
+      case 'ConfirmAssignment':
+        return (
+          <ConfirmAssignmentScreen
+            route={{ params: screenParams }}
+            navigation={navigation}
+          />
+        );
       case 'SyncStatus':
         return <SyncStatusScreen navigation={navigation} />;
       case 'MyIncidents':

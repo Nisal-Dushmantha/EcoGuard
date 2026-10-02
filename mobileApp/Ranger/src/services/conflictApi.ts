@@ -1,10 +1,44 @@
 import axios, { AxiosInstance } from 'axios';
-import { authService } from './authService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Ensure it points to the same base as authService to keep things consistent.
-// We'll export the class so the URL can be updated from a single place if needed,
-// but hardcoding the same IP we used for authService works well for this local setup.
 const DEFAULT_API_BASE = 'http://192.168.8.200:5000';
+
+export interface ConflictReport {
+  _id: string;
+  reportId: string;
+  reporterName: string;
+  contactNumber?: string;
+  park: string;
+  locationName: string;
+  coordinates?: { latitude: number; longitude: number };
+  conflictType: string;
+  animalSpecies: string;
+  severity: 'Low' | 'Medium' | 'High' | 'Critical';
+  reportedAt: string;
+  status: 'Pending Verification' | 'Verified' | 'Rejected' | 'Dispatched' | 'Resolved' | 'False Alarm';
+  description: string;
+  actionTaken?: string;
+  rejectionReason?: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConflictReportsResponse {
+  reports: ConflictReport[];
+  total: number;
+}
+
+export interface GetReportsParams {
+  status?: string;
+  search?: string;
+  severity?: string;
+  animal?: string;
+  park?: string;
+  sort?: 'newest' | 'oldest' | 'severity';
+  limit?: number;
+}
 
 class ConflictApiService {
   private client: AxiosInstance;
@@ -13,17 +47,19 @@ class ConflictApiService {
     this.client = axios.create({
       baseURL: DEFAULT_API_BASE,
       timeout: 10000,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
 
-    // Intercept to add token from authService
-    this.client.interceptors.request.use((config) => {
-      // In a real app we'd expose a getter for the token from authService or async storage
-      // Since authService doesn't export a getToken(), we'll assume it's attached globally or we can bypass for now.
-      // Wait, let's just make the request. If the backend needs auth, we'll need to pass it.
-      // Our new endpoint doesn't strictly enforce auth token yet based on how we wrote the controller.
+    // Attach stored auth token to every request
+    this.client.interceptors.request.use(async (config) => {
+      try {
+        const token = await AsyncStorage.getItem('@ecoguard_auth_token_v1');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      } catch {
+        // AsyncStorage not available – proceed without token
+      }
       return config;
     });
   }
@@ -32,20 +68,112 @@ class ConflictApiService {
     this.client.defaults.baseURL = url;
   }
 
+  // ── Dashboard Summary ────────────────────────────────────────────────────────
   async getDashboardSummary(park?: string): Promise<any> {
     try {
       const response = await this.client.get('/api/mobile/conflicts/dashboard-summary', {
-        params: { park }
+        params: park ? { park } : undefined,
       });
-      if (response.data?.success) {
-        return response.data.data;
-      }
+      if (response.data?.success) return response.data.data;
       throw new Error('Failed to fetch conflict summary');
     } catch (err: any) {
       if (err.code === 'ERR_NETWORK' || !err.response) {
         throw new Error('Network error. Unable to connect to the backend server.');
       }
       throw new Error(err.response?.data?.message || err.message || 'Error fetching summary');
+    }
+  }
+
+  // ── Pending Reports List ─────────────────────────────────────────────────────
+  async getConflictReports(params: GetReportsParams = {}): Promise<ConflictReportsResponse> {
+    try {
+      const response = await this.client.get('/api/mobile/conflicts/reports', { params });
+      if (response.data?.success) return response.data.data;
+      throw new Error('Failed to fetch conflict reports');
+    } catch (err: any) {
+      if (err.code === 'ERR_NETWORK' || !err.response) {
+        throw new Error('Network error. Unable to connect to the backend server.');
+      }
+      throw new Error(err.response?.data?.message || err.message || 'Error fetching reports');
+    }
+  }
+
+  // ── Single Report Details ────────────────────────────────────────────────────
+  async getConflictReportById(reportId: string): Promise<ConflictReport> {
+    try {
+      const response = await this.client.get(`/api/mobile/conflicts/reports/${reportId}`);
+      if (response.data?.success) return response.data.data;
+      throw new Error('Report not found');
+    } catch (err: any) {
+      if (err.code === 'ERR_NETWORK' || !err.response) {
+        throw new Error('Network error. Unable to connect to the backend server.');
+      }
+      throw new Error(err.response?.data?.message || err.message || 'Error fetching report');
+    }
+  }
+
+  // ── Verify Report ────────────────────────────────────────────────────────────
+  async verifyConflictReport(reportId: string, verifiedBy?: string): Promise<ConflictReport> {
+    try {
+      const response = await this.client.patch(
+        `/api/mobile/conflicts/reports/${reportId}/verify`,
+        verifiedBy ? { verifiedBy } : {}
+      );
+      if (response.data?.success) return response.data.data;
+      throw new Error(response.data?.message || 'Verification failed');
+    } catch (err: any) {
+      if (err.code === 'ERR_NETWORK' || !err.response) {
+        throw new Error('Network error. Unable to connect to the backend server.');
+      }
+      throw new Error(err.response?.data?.message || err.message || 'Error verifying report');
+    }
+  }
+
+  // ── Reject Report ─────────────────────────────────────────────────────────────
+  async rejectConflictReport(reportId: string, reason: string): Promise<ConflictReport> {
+    try {
+      const response = await this.client.patch(
+        `/api/mobile/conflicts/reports/${reportId}/reject`,
+        { reason }
+      );
+      if (response.data?.success) return response.data.data;
+      throw new Error(response.data?.message || 'Rejection failed');
+    } catch (err: any) {
+      if (err.code === 'ERR_NETWORK' || !err.response) {
+        throw new Error('Network error. Unable to connect to the backend server.');
+      }
+      throw new Error(err.response?.data?.message || err.message || 'Error rejecting report');
+    }
+  }
+
+  // ── Dispatch Ranger ─────────────────────────────────────────────────────────
+  async dispatchConflictReport(reportId: string, rangerId: string, notes?: string, dispatchedBy?: string): Promise<ConflictReport> {
+    try {
+      const response = await this.client.patch(
+        `/api/mobile/conflicts/reports/${reportId}/dispatch`,
+        { rangerId, notes, dispatchedBy }
+      );
+      if (response.data?.success) return response.data.data;
+      throw new Error(response.data?.message || 'Dispatch failed');
+    } catch (err: any) {
+      if (err.code === 'ERR_NETWORK' || !err.response) {
+        throw new Error('Network error. Unable to connect to the backend server.');
+      }
+      throw new Error(err.response?.data?.message || err.message || 'Error dispatching ranger');
+    }
+  }
+
+  // ── Available Rangers ────────────────────────────────────────────────────────
+  async getAvailableRangers(): Promise<any[]> {
+    try {
+      const response = await this.client.get('/api/mobile/rangers/available');
+      if (response.data?.success) return response.data.data;
+      throw new Error('Failed to fetch available rangers');
+    } catch (err: any) {
+      if (err.code === 'ERR_NETWORK' || !err.response) {
+        throw new Error('Network error. Unable to connect to the backend server.');
+      }
+      throw new Error(err.response?.data?.message || err.message || 'Error fetching rangers');
     }
   }
 }

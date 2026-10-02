@@ -1,8 +1,37 @@
 import { Router } from 'express';
-import { getDashboardSummary } from '../controllers/conflict.controller.js';
+import {
+  getDashboardSummary,
+  getConflictReports,
+  getConflictReportById,
+  verifyConflictReport,
+  rejectConflictReport,
+  dispatchConflictReport,
+} from '../controllers/conflict.controller.js';
+import { authenticateToken, requireRole } from '../../../middlewares/auth.middleware.js';
 
 const router = Router();
 
-router.get('/dashboard-summary', getDashboardSummary);
+// Dashboard summary (Operations Home)
+router.get(
+  '/dashboard-summary',
+  authenticateToken,
+  requireRole(['Community Liaison Officer']),
+  getDashboardSummary
+);
+
+// Pending Reports screen - list with filters/search/sort
+router.get('/reports', getConflictReports);
+
+// Single report details
+router.get('/reports/:reportId', getConflictReportById);
+
+// Verify a pending report
+router.patch('/reports/:reportId/verify', verifyConflictReport);
+
+// Reject a pending report (body: { reason: string })
+router.patch('/reports/:reportId/reject', rejectConflictReport);
+
+// Dispatch a verified report (body: { rangerId: string, notes?: string, dispatchedBy?: string })
+router.patch('/reports/:reportId/dispatch', dispatchConflictReport);
 
 export default router;
