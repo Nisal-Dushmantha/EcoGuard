@@ -168,7 +168,7 @@ export const RangerNavigator: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.screenArea}>{renderScreen()}</View>
 
       {/* BOTTOM TAB NAVIGATION */}
@@ -239,7 +239,7 @@ export const RangerNavigator: React.FC = () => {
           </TouchableOpacity>
         </View>
       ) : null}
-    </SafeAreaView>
+    </View>
   );
 };
 

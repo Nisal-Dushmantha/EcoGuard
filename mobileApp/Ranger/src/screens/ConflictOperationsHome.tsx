@@ -7,6 +7,8 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
+  StatusBar,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { THEME } from '../constants/theme';
@@ -21,7 +23,7 @@ interface ConflictOperationsHomeProps {
 
 export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ navigation }) => {
   const { isConnected } = useNetworkStatus();
-  
+
   const [summary, setSummary] = useState<any>({
     officer: null,
     stats: {
@@ -31,7 +33,7 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
     },
     reports: [] as any[],
   });
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -87,13 +89,16 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       {/* HEADER matching the screenshot design */}
       <View style={styles.topBar}>
         <View style={styles.brandGroup}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoIcon}>🛡</Text>
-          </View>
+          <Image
+            source={require('../../assets/logo.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
           <View>
             <Text style={styles.brandName}>WildGuard Ops</Text>
             <Text style={styles.brandSub}>Conflict Operations</Text>
@@ -166,7 +171,7 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
                 <Text style={styles.statNumber}>{summary?.stats?.pending || 0}</Text>
                 <Text style={styles.statLabel}>PENDING</Text>
               </View>
-              
+
               <View style={[styles.statCard, { borderColor: '#3B82F6' }]}>
                 <View style={styles.statHeader}>
                   <Text style={[styles.statIcon, { color: '#3B82F6' }]}>🛡️</Text>
@@ -175,7 +180,7 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
                 <Text style={styles.statNumber}>{summary?.stats?.verified || 0}</Text>
                 <Text style={styles.statLabel}>VERIFIED</Text>
               </View>
-              
+
               <View style={[styles.statCard, { borderColor: '#8B5CF6' }]}>
                 <View style={styles.statHeader}>
                   <Text style={[styles.statIcon, { color: '#8B5CF6' }]}>🚚</Text>
@@ -208,12 +213,12 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
             ) : (
               summary?.reports?.map((report: any, index: number) => {
                 const timeAgo = Math.max(1, Math.round((new Date().getTime() - new Date(report.reportedAt).getTime()) / 60000));
-                
+
                 return (
-                  <View 
-                    key={report.reportId || index} 
+                  <View
+                    key={report.reportId || index}
                     style={[
-                      styles.reportCard, 
+                      styles.reportCard,
                       { borderLeftColor: getSeverityColor(report.severity) }
                     ]}
                   >
@@ -225,13 +230,13 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
                         </Text>
                       </View>
                     </View>
-                    
+
                     <View style={styles.reportTitleRow}>
                       <Text style={styles.reportIcon}>
-                        {report.animalSpecies === 'Asian Elephant' ? '🐘' : 
-                         report.animalSpecies === 'Sri Lankan Leopard' ? '🐆' : 
-                         report.animalSpecies === 'Wild Boar' ? '🐗' : 
-                         report.animalSpecies === 'Mugger Crocodile' ? '🐊' : '⚠️'}
+                        {report.animalSpecies === 'Asian Elephant' ? '🐘' :
+                          report.animalSpecies === 'Sri Lankan Leopard' ? '🐆' :
+                            report.animalSpecies === 'Wild Boar' ? '🐗' :
+                              report.animalSpecies === 'Mugger Crocodile' ? '🐊' : '⚠️'}
                       </Text>
                       <Text style={styles.reportTitle} numberOfLines={2}>
                         {report.conflictType}
@@ -241,7 +246,7 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
                         <Text style={styles.statusText}>{report.status.toUpperCase()}</Text>
                       </View>
                     </View>
-                    
+
                     <View style={styles.reportDetailsBox}>
                       <View style={styles.detailRow}>
                         <Text style={styles.detailIcon}>📍</Text>
@@ -252,7 +257,7 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
                         <Text style={styles.detailText}>{timeAgo} minutes ago</Text>
                       </View>
                     </View>
-                    
+
                     <View style={styles.metaRow}>
                       <View style={styles.metaItem}>
                         <Text style={styles.metaIcon}>🐾</Text>
@@ -264,8 +269,8 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
                         </Text>
                       </View>
                     </View>
-                    
-                    <TouchableOpacity 
+
+                    <TouchableOpacity
                       style={styles.reviewBtn}
                       onPress={() => navigation.navigate('IncidentDetails', { id: report.reportId })}
                     >
@@ -309,7 +314,7 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8F9FB', // Light gray background
+    backgroundColor: '#FFFFFF',
   },
   topBar: {
     flexDirection: 'row',
@@ -325,19 +330,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  logoCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: '#E8F5E9',
-    alignItems: 'center',
-    justifyContent: 'center',
+  logoImage: {
+    width: 32,
+    height: 32,
     marginRight: 10,
-    borderWidth: 1,
-    borderColor: '#C8E6C9',
-  },
-  logoIcon: {
-    fontSize: 18,
   },
   brandName: {
     fontSize: 15,
