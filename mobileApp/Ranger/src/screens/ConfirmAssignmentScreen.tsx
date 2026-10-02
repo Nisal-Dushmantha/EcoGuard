@@ -182,7 +182,7 @@ export const ConfirmAssignmentScreen: React.FC<ConfirmAssignmentScreenProps> = (
       setShowConfirmModal(false);
       
       // Navigate to success screen
-      navigation.navigate('DispatchSuccess', { reportId, rangerId });
+      navigation.navigate('DispatchSuccess', { reportId, rangerId, rangerName });
     } catch (err: any) {
       setShowConfirmModal(false);
       setDispatchError(err.message || 'Unable to dispatch ranger. Please try again.');

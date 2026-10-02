@@ -112,6 +112,21 @@ class AuthService {
   }
 
   /**
+   * Get current authenticated user details
+   */
+  async getMe(): Promise<any> {
+    try {
+      const response = await this.client.get('/api/webapp/auth/me');
+      return response.data;
+    } catch (err: any) {
+      if (err.code === 'ERR_NETWORK' || !err.response) {
+        throw new Error('Network error. Unable to connect to the backend server.');
+      }
+      throw new Error(err.response?.data?.error || err.message || 'Failed to fetch profile');
+    }
+  }
+
+  /**
    * Check if backend server is reachable
    */
   async checkHealth(): Promise<boolean> {

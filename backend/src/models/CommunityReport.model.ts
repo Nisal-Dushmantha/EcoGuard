@@ -17,7 +17,7 @@ export type AnimalSpecies =
   | 'Other';
 
 export type ConflictSeverity = 'Low' | 'Medium' | 'High' | 'Critical';
-export type ConflictStatus = 'Pending Verification' | 'Verified' | 'Rejected' | 'Dispatched' | 'Resolved' | 'False Alarm';
+export type ConflictStatus = 'Pending Verification' | 'Verified' | 'Rejected' | 'Dispatched' | 'In Progress' | 'Resolved' | 'False Alarm';
 
 export interface ICommunityReport extends Document {
   reportId: string;
@@ -42,6 +42,10 @@ export interface ICommunityReport extends Document {
   assignedRangerId?: string;
   dispatchedAt?: Date;
   dispatchedBy?: string;
+  inProgressAt?: Date;
+  resolvedAt?: Date;
+  resolvedBy?: string;
+  resolutionNote?: string;
   officerNotes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -120,7 +124,7 @@ const CommunityReportSchema = new Schema<ICommunityReport>(
     },
     status: {
       type: String,
-      enum: ['Pending Verification', 'Verified', 'Rejected', 'Dispatched', 'Resolved', 'False Alarm'],
+      enum: ['Pending Verification', 'Verified', 'Rejected', 'Dispatched', 'In Progress', 'Resolved', 'False Alarm'],
       default: 'Pending Verification',
       index: true,
     },
@@ -152,6 +156,20 @@ const CommunityReportSchema = new Schema<ICommunityReport>(
       type: Date,
     },
     dispatchedBy: {
+      type: String,
+      default: '',
+    },
+    inProgressAt: {
+      type: Date,
+    },
+    resolvedAt: {
+      type: Date,
+    },
+    resolvedBy: {
+      type: String,
+      default: '',
+    },
+    resolutionNote: {
       type: String,
       default: '',
     },

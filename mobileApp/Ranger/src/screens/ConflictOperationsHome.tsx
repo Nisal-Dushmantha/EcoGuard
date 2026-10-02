@@ -104,7 +104,7 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
             <Text style={styles.notificationIcon}>🔔</Text>
             <View style={styles.notificationBadge}><Text style={styles.badgeText}>2</Text></View>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.avatarCircle} onPress={handleLogout}>
+          <TouchableOpacity style={styles.avatarCircle} onPress={() => navigation.navigate('OfficerProfile')}>
             <Text style={styles.avatarText}>
               {summary?.officer?.name ? summary.officer.name.substring(0, 2).toUpperCase() : 'CO'}
             </Text>
@@ -297,7 +297,7 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
           <Text style={styles.navIcon}>📋</Text>
           <Text style={styles.navLabel}>Reports</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('AlertsTab')}>
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('ConflictActivity')}>
           <Text style={styles.navIcon}>🕒</Text>
           <Text style={styles.navLabel}>Activity</Text>
         </TouchableOpacity>

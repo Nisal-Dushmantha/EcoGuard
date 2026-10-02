@@ -15,12 +15,20 @@ export interface ConflictReport {
   animalSpecies: string;
   severity: 'Low' | 'Medium' | 'High' | 'Critical';
   reportedAt: string;
-  status: 'Pending Verification' | 'Verified' | 'Rejected' | 'Dispatched' | 'Resolved' | 'False Alarm';
+  status: 'Pending Verification' | 'Verified' | 'Rejected' | 'Dispatched' | 'In Progress' | 'Resolved' | 'False Alarm';
   description: string;
   actionTaken?: string;
   rejectionReason?: string;
   verifiedBy?: string;
   verifiedAt?: string;
+  assignedRangerId?: string;
+  dispatchedBy?: string;
+  dispatchedAt?: string;
+  inProgressAt?: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+  resolutionNote?: string;
+  officerNotes?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -160,6 +168,23 @@ class ConflictApiService {
         throw new Error('Network error. Unable to connect to the backend server.');
       }
       throw new Error(err.response?.data?.message || err.message || 'Error dispatching ranger');
+    }
+  }
+
+  // ── Update Status ─────────────────────────────────────────────────────────
+  async updateConflictStatus(reportId: string, status: string, note?: string): Promise<ConflictReport> {
+    try {
+      const response = await this.client.patch(
+        `/api/mobile/conflicts/reports/${reportId}/status`,
+        { status, note }
+      );
+      if (response.data?.success) return response.data.data;
+      throw new Error(response.data?.message || 'Status update failed');
+    } catch (err: any) {
+      if (err.code === 'ERR_NETWORK' || !err.response) {
+        throw new Error('Network error. Unable to connect to the backend server.');
+      }
+      throw new Error(err.response?.data?.message || err.message || 'Error updating status');
     }
   }
 

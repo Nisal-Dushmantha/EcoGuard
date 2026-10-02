@@ -5,11 +5,11 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
   RefreshControl,
   ActivityIndicator,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { conflictApi, ConflictReport } from '../services/conflictApi';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
@@ -485,7 +485,7 @@ export const PendingReportsScreen: React.FC<PendingReportsScreenProps> = ({ navi
 
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => navigation.navigate('AlertsTab')}
+          onPress={() => navigation.navigate('ConflictActivity')}
         >
           <Text style={styles.navIcon}>🕒</Text>
           <Text style={styles.navLabel}>Activity</Text>

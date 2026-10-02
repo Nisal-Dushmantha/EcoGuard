@@ -5,8 +5,8 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
-} from 'react-native';
+  } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { THEME } from '../constants/theme';
 import { AppHeader } from '../components/AppHeader';
 import { RangerAlert } from '../types/incident';

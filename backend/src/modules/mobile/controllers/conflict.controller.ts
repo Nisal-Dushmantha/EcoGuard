@@ -343,3 +343,54 @@ export const dispatchConflictReport = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * PATCH /api/mobile/conflicts/reports/:reportId/status
+ * Update status of a report (e.g. IN_PROGRESS, RESOLVED)
+ */
+export const updateConflictStatus = async (req: Request, res: Response) => {
+  try {
+    const { reportId } = req.params;
+    const { status, note } = req.body;
+
+    const report = await CommunityReport.findOne({ reportId });
+    if (!report) {
+      res.status(404).json({ success: false, message: 'Report not found' });
+      return;
+    }
+
+    // Basic transition validation
+    if (status === 'In Progress' && report.status !== 'Dispatched') {
+      res.status(400).json({ success: false, message: 'Only Dispatched reports can be marked In Progress.' });
+      return;
+    }
+    if (status === 'Resolved' && !['Dispatched', 'In Progress'].includes(report.status)) {
+      res.status(400).json({ success: false, message: 'Report must be Dispatched or In Progress before resolving.' });
+      return;
+    }
+
+    report.status = status;
+    
+    if (status === 'In Progress') {
+      report.inProgressAt = new Date();
+      if (note) report.officerNotes = report.officerNotes ? `${report.officerNotes}\n${note}` : note;
+    }
+    
+    if (status === 'Resolved') {
+      report.resolvedAt = new Date();
+      report.resolvedBy = (req as any).user?.name || 'Community Liaison Officer';
+      report.resolutionNote = note || '';
+      if (note) report.officerNotes = report.officerNotes ? `${report.officerNotes}\nResolved: ${note}` : `Resolved: ${note}`;
+    }
+
+    await report.save();
+
+    res.json({
+      success: true,
+      message: `Status updated to ${status}.`,
+      data: report.toObject(),
+    });
+  } catch (err: any) {
+    console.error('Error in updateConflictStatus:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};

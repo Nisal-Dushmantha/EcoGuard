@@ -6,6 +6,7 @@ import {
   verifyConflictReport,
   rejectConflictReport,
   dispatchConflictReport,
+  updateConflictStatus,
 } from '../controllers/conflict.controller.js';
 import { authenticateToken, requireRole } from '../../../middlewares/auth.middleware.js';
 
@@ -33,5 +34,8 @@ router.patch('/reports/:reportId/reject', rejectConflictReport);
 
 // Dispatch a verified report (body: { rangerId: string, notes?: string, dispatchedBy?: string })
 router.patch('/reports/:reportId/dispatch', dispatchConflictReport);
+
+// Update status (e.g. IN_PROGRESS, RESOLVED)
+router.patch('/reports/:reportId/status', updateConflictStatus);
 
 export default router;

@@ -18,6 +18,10 @@ import { ConflictReportDetailsScreen } from '../screens/ConflictReportDetailsScr
 import { VerifyConfirmScreen } from '../screens/VerifyConfirmScreen';
 import { AvailableRangerSelection } from '../screens/AvailableRangerSelection'; // force reparse
 import { ConfirmAssignmentScreen } from '../screens/ConfirmAssignmentScreen';
+import { DispatchSuccessScreen } from '../screens/DispatchSuccessScreen';
+import { ConflictActivityScreen } from '../screens/ConflictActivityScreen';
+import { OfficerProfileScreen } from '../screens/OfficerProfileScreen';
+import { ActiveIncidentTrackingScreen } from '../screens/ActiveIncidentTrackingScreen';
 import { LocalIncidentRecord } from '../types/incident';
 
 // Navigation state container supporting standalone and React Navigation environments
@@ -132,6 +136,24 @@ export const RangerNavigator: React.FC = () => {
             navigation={navigation}
           />
         );
+      case 'DispatchSuccess':
+        return (
+          <DispatchSuccessScreen
+            route={{ params: screenParams }}
+            navigation={navigation}
+          />
+        );
+      case 'ActiveIncidentTracking':
+        return (
+          <ActiveIncidentTrackingScreen
+            route={{ params: screenParams }}
+            navigation={navigation}
+          />
+        );
+      case 'ConflictActivity':
+        return <ConflictActivityScreen navigation={navigation} />;
+      case 'OfficerProfile':
+        return <OfficerProfileScreen navigation={navigation} />;
       case 'SyncStatus':
         return <SyncStatusScreen navigation={navigation} />;
       case 'MyIncidents':

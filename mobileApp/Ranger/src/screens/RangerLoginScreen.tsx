@@ -7,8 +7,8 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
-} from 'react-native';
+  } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { THEME } from '../constants/theme';
 import { InputField } from '../components/InputField';
 import { PrimaryButton } from '../components/PrimaryButton';
