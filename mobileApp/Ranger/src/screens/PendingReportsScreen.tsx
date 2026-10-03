@@ -8,9 +8,12 @@ import {
   RefreshControl,
   ActivityIndicator,
   TextInput,
+  StatusBar,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { conflictApi, ConflictReport } from '../services/conflictApi';
+import { authService } from '../services/authService';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -224,7 +227,6 @@ export const PendingReportsScreen: React.FC<PendingReportsScreenProps> = ({ navi
   const filteredReports = useMemo(() => {
     let list = reports;
 
-    // Search filter
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       list = list.filter(
@@ -237,12 +239,10 @@ export const PendingReportsScreen: React.FC<PendingReportsScreenProps> = ({ navi
       );
     }
 
-    // Severity filter
     if (severityFilter) {
       list = list.filter((r) => r.severity === severityFilter);
     }
 
-    // Animal filter
     if (animalFilter) {
       list = list.filter((r) => r.animalSpecies === animalFilter);
     }
@@ -250,38 +250,48 @@ export const PendingReportsScreen: React.FC<PendingReportsScreenProps> = ({ navi
     return list;
   }, [reports, search, severityFilter, animalFilter]);
 
-  // ── Derived counts ──────────────────────────────────────────────────────────
   const criticalCount = useMemo(
     () => filteredReports.filter((r) => r.severity === 'Critical' || r.severity === 'High').length,
     [filteredReports]
   );
 
-  // ── Navigation ──────────────────────────────────────────────────────────────
   const handleReview = (reportId: string) => {
     navigation.navigate('ConflictReportDetails', { reportId });
   };
 
-  // ─── Render ──────────────────────────────────────────────────────────────────
+  const officerName = authService.userName || 'Officer';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
       {/* ── Top Bar ─────────────────────────────────────────────────── */}
       <View style={styles.topBar}>
-        <View style={styles.topBarLeft}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <Text style={styles.backBtnText}>←</Text>
-          </TouchableOpacity>
+        <View style={styles.brandGroup}>
+          <Image
+            source={require('../../assets/logo.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
           <View>
-            <Text style={styles.screenTitle}>Pending Reports</Text>
-            <Text style={styles.screenSubtitle}>WildGuard Ops | UC03</Text>
+            <Text style={styles.brandName}>WildGuard Ops</Text>
+            <Text style={styles.brandSub}>Pending Reports</Text>
           </View>
         </View>
-        <View style={styles.topBarRight}>
+        <View style={styles.topRightControls}>
           {!loading && (
             <View style={styles.reportCountBadge}>
-              <Text style={styles.reportCountText}>{totalCount} Reports</Text>
+              <Text style={styles.reportCountText}>{totalCount} Pending</Text>
             </View>
           )}
+          <TouchableOpacity
+            style={styles.avatarCircle}
+            onPress={() => navigation.navigate('OfficerProfile')}
+          >
+            <Text style={styles.avatarText}>
+              {officerName ? officerName.substring(0, 2).toUpperCase() : 'CO'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -507,24 +517,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  topBarLeft: { flexDirection: 'row', alignItems: 'center' },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F3F4F6',
+  brandGroup: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
   },
-  backBtnText: { fontSize: 20, color: '#374151', fontWeight: '700' },
-  screenTitle: { fontSize: 17, fontWeight: '800', color: '#111827' },
-  screenSubtitle: { fontSize: 11, color: '#6B7280', fontWeight: '500' },
-  topBarRight: { flexDirection: 'row', alignItems: 'center' },
+  logoImage: {
+    width: 32,
+    height: 32,
+    marginRight: 8,
+  },
+  brandName: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#1B4332',
+    letterSpacing: -0.3,
+  },
+  brandSub: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: -2,
+  },
+  topRightControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   reportCountBadge: {
     backgroundColor: '#ECFDF5',
     paddingHorizontal: 10,
@@ -533,7 +555,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#A7F3D0',
   },
-  reportCountText: { color: '#065F46', fontSize: 12, fontWeight: '800' },
+  reportCountText: { color: '#065F46', fontSize: 11, fontWeight: '800' },
+  avatarCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#1B4332',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
 
   // Banners
   offlineBanner: {

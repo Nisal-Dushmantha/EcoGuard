@@ -91,7 +91,7 @@ export const DispatchSuccessScreen: React.FC<DispatchSuccessScreenProps> = ({
   const shortRangerId = rangerId ? rangerId.slice(-4).toUpperCase() : 'R001';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <View style={styles.header}>
         <View style={styles.headerTitleBox}>
@@ -100,7 +100,7 @@ export const DispatchSuccessScreen: React.FC<DispatchSuccessScreenProps> = ({
           </View>
           <View>
             <Text style={styles.headerTitle}>WildGuard Ops</Text>
-            <Text style={styles.headerSubtitle}>FIELD DISPATCH COMMAND</Text>
+            <Text style={styles.headerSubtitle}>Field Dispatch Command</Text>
           </View>
         </View>
         <TouchableOpacity style={styles.headerCloseBtn} onPress={handleBackToOps}>
@@ -232,7 +232,7 @@ export const DispatchSuccessScreen: React.FC<DispatchSuccessScreenProps> = ({
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F0F4FF' },
+  safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
   bold: { fontWeight: 'bold' },
   scroll: { padding: 16, paddingBottom: 40 },
   
@@ -252,8 +252,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: '#F0F4FF',
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   headerTitleBox: { flexDirection: 'row', alignItems: 'center' },
   shieldIconBox: { width: 36, height: 36, borderRadius: 8, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', marginRight: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },

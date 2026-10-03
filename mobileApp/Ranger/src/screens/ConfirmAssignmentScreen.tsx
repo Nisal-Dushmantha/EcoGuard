@@ -240,15 +240,15 @@ export const ConfirmAssignmentScreen: React.FC<ConfirmAssignmentScreenProps> = (
   const rangerInitials = rangerName ? rangerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'RN';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerBackBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.headerBackText}>←</Text>
         </TouchableOpacity>
         <View style={styles.headerTitleBox}>
-          <Text style={styles.headerSubtitle}>WILDGUARD OPS - UC03</Text>
           <Text style={styles.headerTitle}>Confirm Assignment</Text>
+          <Text style={styles.headerSubtitle}>WildGuard Ops • Ranger Dispatch</Text>
         </View>
         <View style={styles.headerIconBox}>
           <Text style={styles.headerIcon}>🛡️</Text>
@@ -443,7 +443,7 @@ export const ConfirmAssignmentScreen: React.FC<ConfirmAssignmentScreenProps> = (
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
+  safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
   bold: { fontWeight: 'bold' },
 
   // Header
@@ -452,7 +452,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   headerBackBtn: {
     paddingRight: 16,

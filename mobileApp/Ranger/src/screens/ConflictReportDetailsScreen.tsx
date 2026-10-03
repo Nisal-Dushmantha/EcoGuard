@@ -405,7 +405,7 @@ export const ConflictReportDetailsScreen: React.FC<ConflictReportDetailsProps> =
   const isRejected = report.status === 'Rejected';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {/* ── Top Bar ─────────────────────────────────────────────────── */}
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>

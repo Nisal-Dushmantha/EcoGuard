@@ -117,7 +117,7 @@ export const ActiveIncidentTrackingScreen: React.FC<ActiveIncidentTrackingScreen
   const isResolved = !!report.resolvedAt;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {/* HEADER */}
       <View style={styles.topHeader}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -125,17 +125,15 @@ export const ActiveIncidentTrackingScreen: React.FC<ActiveIncidentTrackingScreen
         </TouchableOpacity>
         <View style={styles.headerTitleBox}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={styles.headerLogo}>🛡️</Text>
-            <Text style={styles.headerTitle}>Conflict Report </Text>
+            <Text style={styles.headerTitle}>Report Status </Text>
             <View style={styles.headerIdBadge}>
-              <Text style={styles.headerIdText}>{report.reportId}</Text>
+              <Text style={styles.headerIdText}>#{report.reportId}</Text>
             </View>
           </View>
-          <Text style={styles.headerSubtitle}>WildGuard Ops • Incident Dispatch</Text>
+          <Text style={styles.headerSubtitle}>WildGuard Ops • Operational Tracking</Text>
         </View>
         <View style={styles.headerRightControls}>
-          <Text style={styles.headerIcon}>🔗</Text>
-          <Text style={[styles.headerIcon, { marginLeft: 12 }]}>⋮</Text>
+          <Text style={styles.headerIcon}>🛡️</Text>
         </View>
       </View>
 
@@ -422,7 +420,16 @@ const styles = StyleSheet.create({
   retryBtn: { backgroundColor: '#1B4332', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
   retryBtnText: { color: '#FFFFFF', fontWeight: '800' },
 
-  topHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#F3F4F6' },
+  topHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
   backBtn: { padding: 4 },
   backBtnText: { fontSize: 24, color: '#374151', fontWeight: '600' },
   headerTitleBox: { alignItems: 'center' },

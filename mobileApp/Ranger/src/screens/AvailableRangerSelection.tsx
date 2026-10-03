@@ -103,15 +103,15 @@ export const AvailableRangerSelection: React.FC<AvailableRangerSelectionProps> =
   const sevBg = SEVERITY_BG[report.severity] ?? '#F9FAFB';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerBackBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.headerBackText}>←</Text>
         </TouchableOpacity>
         <View style={styles.headerTitleBox}>
-          <Text style={styles.headerSubtitle}>WILDGUARD OPS - UC03</Text>
           <Text style={styles.headerTitle}>Select Ranger</Text>
+          <Text style={styles.headerSubtitle}>WildGuard Ops • Ranger Dispatch</Text>
         </View>
         <View style={styles.headerIconBox}>
           <Text style={styles.headerIcon}>🛡️</Text>
@@ -232,7 +232,7 @@ export const AvailableRangerSelection: React.FC<AvailableRangerSelectionProps> =
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
+  safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
   bold: { fontWeight: 'bold' },
 
   header: {
@@ -240,7 +240,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   headerBackBtn: { paddingRight: 16 },
   headerBackText: { fontSize: 24, color: '#374151' },

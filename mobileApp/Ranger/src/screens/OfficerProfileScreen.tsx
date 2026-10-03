@@ -528,7 +528,7 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
+  safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
   centerBox: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F9FAFB' },
   loadingText: { marginTop: 12, fontSize: 14, color: '#4B5563', fontWeight: '500' },
   errorText: { fontSize: 14, color: '#DC2626', fontWeight: '600', marginBottom: 16 },

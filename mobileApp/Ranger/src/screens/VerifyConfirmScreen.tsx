@@ -141,8 +141,8 @@ export const VerifyConfirmScreen: React.FC<VerifyConfirmScreenProps> = ({
   // ── Main UI ──────────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* Top bar - minimal, no back button in screenshot but keep for usability */}
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      {/* Top bar */}
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backBtn} onPress={handleCancel}>
           <Text style={styles.backBtnText}>←</Text>
@@ -276,10 +276,11 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderBottomWidth: 0,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 18,
