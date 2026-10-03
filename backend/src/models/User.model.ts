@@ -9,6 +9,10 @@ export interface IUser extends Document {
   password: string;
   role: UserRole;
   assignedPark: string;
+  phoneNumber?: string;
+  dutyStatus?: boolean;
+  callSign?: string;
+  officerId?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -46,6 +50,25 @@ const UserSchema = new Schema<IUser>(
     assignedPark: {
       type: String,
       default: 'Yala National Park',
+      trim: true,
+    },
+    phoneNumber: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    dutyStatus: {
+      type: Boolean,
+      default: true,
+    },
+    callSign: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    officerId: {
+      type: String,
+      default: '',
       trim: true,
     },
   },

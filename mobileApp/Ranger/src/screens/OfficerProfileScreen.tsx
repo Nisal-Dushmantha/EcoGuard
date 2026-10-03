@@ -8,6 +8,9 @@ import {
   ActivityIndicator,
   Switch,
   Alert,
+  Modal,
+  TextInput,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { authService } from '../services/authService';
@@ -22,15 +25,36 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
   const [profile, setProfile] = useState<any>(null);
   const [isDutyActive, setIsDutyActive] = useState(true);
 
+  // Modal States for Edit Profile & Change Password
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Edit Profile Form State
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editCallSign, setEditCallSign] = useState('');
+
+  // Password Form State
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Fetch real profile from backend/MongoDB
   const loadProfile = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await authService.getMe();
       if (response && response.user) {
-        setProfile(response.user);
+        const u = response.user;
+        setProfile(u);
+        setIsDutyActive(u.dutyStatus !== undefined ? u.dutyStatus : true);
+        setEditName(u.name || '');
+        setEditPhone(u.phoneNumber || '');
+        setEditCallSign(u.callSign || '');
       } else {
-        throw new Error('User data not found.');
+        throw new Error('User profile data not found.');
       }
     } catch (err: any) {
       setError(err.message || 'Unable to load profile.');
@@ -43,22 +67,96 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
     loadProfile();
   }, [loadProfile]);
 
+  // Real Logout Flow
   const handleLogout = async () => {
-    Alert.alert('Confirm Logout', 'Are you sure you want to log out from the field console?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          await authService.logout();
-          navigation.replace('Login');
+    Alert.alert(
+      'Confirm Logout',
+      'Are you sure you want to log out from the field console? Your local session token will be invalidated.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            await authService.logout();
+            navigation.replace('Login');
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
-  const toggleDutyStatus = () => {
-    setIsDutyActive((prev) => !prev);
+  // Toggle Duty Status with Real Backend Update
+  const toggleDutyStatus = async () => {
+    const nextStatus = !isDutyActive;
+    setIsDutyActive(nextStatus);
+    try {
+      await authService.updateProfile({ dutyStatus: nextStatus });
+    } catch (err: any) {
+      // Revert if API call fails
+      setIsDutyActive(!nextStatus);
+      Alert.alert('Error', 'Failed to update duty status on server.');
+    }
+  };
+
+  // Save Edit Profile
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) {
+      Alert.alert('Validation Error', 'Full Name cannot be empty.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await authService.updateProfile({
+        name: editName.trim(),
+        phoneNumber: editPhone.trim(),
+        callSign: editCallSign.trim(),
+      });
+      if (res && res.user) {
+        setProfile(res.user);
+      }
+      setShowEditModal(false);
+      Alert.alert('Success', 'Profile updated successfully.');
+      loadProfile();
+    } catch (err: any) {
+      Alert.alert('Update Failed', err.message || 'Unable to update profile.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Save Password Change
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      Alert.alert('Validation Error', 'Please fill in all password fields.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Validation Error', 'New passwords do not match.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      Alert.alert('Validation Error', 'New password must be at least 6 characters long.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await authService.changePassword({
+        currentPassword,
+        newPassword,
+      });
+      setShowPasswordModal(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      Alert.alert('Success', 'Password changed successfully.');
+    } catch (err: any) {
+      Alert.alert('Password Change Failed', err.message || 'Incorrect current password.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -81,8 +179,29 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
     );
   }
 
+  // Format user role for display
+  const displayRole =
+    profile.role === 'COMMUNITY_LIAISON_OFFICER' || profile.role === 'Community Liaison Officer'
+      ? 'Community Liaison Officer'
+      : profile.role || 'Field Officer';
+
+  // Format officer initials
+  const initials = profile.name
+    ? profile.name
+        .split(' ')
+        .filter(Boolean)
+        .map((n: string) => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase()
+    : 'CO';
+
+  const officerIdDisplay = profile.officerId || profile.id || profile._id || 'Not assigned';
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
       {/* ── Top Header ── */}
       <View style={styles.topHeader}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -92,7 +211,7 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
           <Text style={styles.headerTitle}>Officer Profile</Text>
           <Text style={styles.headerSubtitle}>FIELD OPERATIONS CONSOLE</Text>
         </View>
-        <TouchableOpacity style={styles.settingsBtn}>
+        <TouchableOpacity style={styles.settingsBtn} onPress={() => setShowEditModal(true)}>
           <Text style={styles.settingsIcon}>⚙️</Text>
         </TouchableOpacity>
       </View>
@@ -110,25 +229,21 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
           </View>
         </View>
 
-        {/* ── Profile Card ── */}
+        {/* ── Profile Main Card ── */}
         <View style={styles.card}>
           <View style={styles.profileTopRow}>
             <View style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>
-                {profile.name ? profile.name.substring(0, 2).toUpperCase() : 'CO'}
-              </Text>
-              <View style={styles.onlineDot} />
+              <Text style={styles.avatarText}>{initials}</Text>
+              <View style={[styles.onlineDot, { backgroundColor: isDutyActive ? '#10B981' : '#9CA3AF' }]} />
             </View>
             <View style={styles.profileInfo}>
               <View style={styles.nameRow}>
                 <Text style={styles.profileName}>{profile.name}</Text>
                 <Text style={styles.verifiedIcon}>✅</Text>
               </View>
-              <Text style={styles.profileRole}>
-                {profile.role === 'Community Liaison Officer' ? 'Community Liaison Officer' : profile.role}
-              </Text>
+              <Text style={styles.profileRole}>{displayRole}</Text>
               <View style={styles.clearanceBadge}>
-                <Text style={styles.clearanceText}>🔒 Tier 4 Clearance — Pre-cleared</Text>
+                <Text style={styles.clearanceText}>🔒 Tier 4 Clearance — Authenticated</Text>
               </View>
             </View>
           </View>
@@ -138,12 +253,13 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
             <Text style={styles.deptText}>Department of Wildlife Conservation & Field Operations.</Text>
           </View>
 
+          {/* ── Duty Status Toggle Switch ── */}
           <View style={[styles.dutyToggleRow, isDutyActive ? styles.dutyActiveBg : styles.dutyInactiveBg]}>
             <View style={styles.dutyInfo}>
               <View style={styles.dutyStatusRow}>
                 <View style={[styles.dutyStatusDot, { backgroundColor: isDutyActive ? '#10B981' : '#6B7280' }]} />
                 <Text style={styles.dutyStatusTitle}>
-                  {isDutyActive ? `ON DUTY - ${profile.assignedPark}` : 'OFF DUTY'}
+                  {isDutyActive ? `ON DUTY - ${profile.assignedPark || 'Yala National Park'}` : 'OFF DUTY'}
                 </Text>
               </View>
               <Text style={styles.dutyStatusSub}>
@@ -159,38 +275,43 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
           </View>
         </View>
 
-        {/* ── Field Credentials & Manifest ── */}
+        {/* ── Field Credentials & Database Manifest ── */}
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionHeaderLeft}>
               <Text style={styles.sectionHeaderIcon}>🪪</Text>
-              <Text style={styles.sectionHeaderTitle}>Field Credentials &{'\n'}Manifest</Text>
+              <Text style={styles.sectionHeaderTitle}>Field Credentials &{'\n'}Database Manifest</Text>
             </View>
             <View style={styles.authenticatedBadge}>
-              <Text style={styles.authenticatedText}>AUTHENTICATED</Text>
+              <Text style={styles.authenticatedText}>DATABASE LIVE</Text>
             </View>
           </View>
 
+          {/* Officer ID */}
           <View style={styles.credentialRow}>
             <Text style={styles.credIcon}>🆔</Text>
             <View style={styles.credTextGroup}>
-              <Text style={styles.credLabel}>OFFICER ID / TOKEN</Text>
-              <Text style={styles.credValue}>{profile.id ? profile.id.slice(0, 15).toUpperCase() : 'Not assigned'}</Text>
+              <Text style={styles.credLabel}>OFFICER ID / USER TOKEN</Text>
+              <Text style={styles.credValue}>
+                {officerIdDisplay.length > 18 ? officerIdDisplay.slice(0, 18) + '...' : officerIdDisplay}
+              </Text>
             </View>
             <Text style={styles.credActionIcon}>📋</Text>
           </View>
 
+          {/* Call Sign */}
           <View style={styles.credentialRow}>
             <Text style={styles.credIcon}>📡</Text>
             <View style={styles.credTextGroup}>
               <Text style={styles.credLabel}>TACTICAL RADIO CALL SIGN</Text>
-              <Text style={styles.credValue}>Not assigned</Text>
+              <Text style={styles.credValue}>{profile.callSign || 'Not assigned'}</Text>
             </View>
             <View style={styles.radioBadge}>
               <Text style={styles.radioBadgeText}>CH-04</Text>
             </View>
           </View>
 
+          {/* Email */}
           <View style={styles.credentialRow}>
             <Text style={styles.credIcon}>✉️</Text>
             <View style={styles.credTextGroup}>
@@ -200,19 +321,23 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
             <Text style={styles.credVerifiedIcon}>✅</Text>
           </View>
 
+          {/* Phone Number */}
           <View style={styles.credentialRow}>
             <Text style={styles.credIcon}>📞</Text>
             <View style={styles.credTextGroup}>
               <Text style={styles.credLabel}>FIELD CELLULAR HOTLINE</Text>
-              <Text style={styles.credValue}>Not assigned</Text>
+              <Text style={styles.credValue}>{profile.phoneNumber || 'Not assigned'}</Text>
             </View>
-            <Text style={styles.credActionIcon}>📞</Text>
+            <TouchableOpacity onPress={() => setShowEditModal(true)}>
+              <Text style={styles.credActionIcon}>✏️</Text>
+            </TouchableOpacity>
           </View>
 
+          {/* Station / Assigned Park */}
           <View style={[styles.credentialRow, styles.lastCredentialRow]}>
             <Text style={styles.credIcon}>🏢</Text>
             <View style={styles.credTextGroup}>
-              <Text style={styles.credLabel}>ASSIGNED STATION / OUTPOST</Text>
+              <Text style={styles.credLabel}>ASSIGNED STATION / PARK</Text>
               <Text style={styles.credValue}>{profile.assignedPark || 'Not assigned'}</Text>
               <Text style={styles.credSubValue}>Elephant Corridor Sector 02</Text>
             </View>
@@ -225,24 +350,27 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
             <Text style={styles.prefHeaderIcon}>🛡️</Text> Security & Operational Preferences
           </Text>
 
-          <TouchableOpacity style={styles.prefRow}>
+          {/* Edit Profile Action */}
+          <TouchableOpacity style={styles.prefRow} onPress={() => setShowEditModal(true)}>
             <Text style={styles.prefIcon}>👤</Text>
             <View style={styles.prefTextGroup}>
               <Text style={styles.prefTitle}>Edit Profile Details</Text>
-              <Text style={styles.prefSub}>Contact number, alternate liaison phone</Text>
+              <Text style={styles.prefSub}>Update full name, phone hotline, tactical call sign</Text>
             </View>
             <Text style={styles.prefChevron}>›</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.prefRow}>
+          {/* Change Password Action */}
+          <TouchableOpacity style={styles.prefRow} onPress={() => setShowPasswordModal(true)}>
             <Text style={styles.prefIcon}>🔑</Text>
             <View style={styles.prefTextGroup}>
-              <Text style={styles.prefTitle}>Change Officer Password & Radio Passkey</Text>
-              <Text style={styles.prefSub}>AES-256 frequency hopping token</Text>
+              <Text style={styles.prefTitle}>Change Officer Password</Text>
+              <Text style={styles.prefSub}>Update account security passkey</Text>
             </View>
             <Text style={styles.prefChevron}>›</Text>
           </TouchableOpacity>
 
+          {/* Operational Notifications */}
           <TouchableOpacity style={styles.prefRow}>
             <Text style={styles.prefIcon}>🔔</Text>
             <View style={styles.prefTextGroup}>
@@ -255,16 +383,6 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
             </View>
             <Text style={styles.prefChevron}>›</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity style={styles.prefRow}>
-            <Text style={styles.prefIcon}>📄</Text>
-            <View style={styles.prefTextGroup}>
-              <Text style={styles.prefTitle}>Field Protocol & Dispatch Manual</Text>
-              <Text style={styles.prefSub}>Standard Operating Procedure Rev 4.2</Text>
-              <Text style={styles.prefSub}>(PDF - 14.8 MB)</Text>
-            </View>
-            <Text style={styles.prefActionIcon}>📥</Text>
-          </TouchableOpacity>
         </View>
 
         {/* ── Footer Info ── */}
@@ -275,7 +393,7 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
           </View>
           <View style={styles.fipsBadge}>
             <View style={styles.fipsDot} />
-            <Text style={styles.fipsText}>FIPS 140-3 Cryptographic Field Tunnel Active</Text>
+            <Text style={styles.fipsText}>MongoDB Encrypted Auth Channel Active</Text>
           </View>
         </View>
 
@@ -288,6 +406,123 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
 
         <View style={{ height: 30 }} />
       </ScrollView>
+
+      {/* ── Modal 1: Edit Profile Details ── */}
+      <Modal visible={showEditModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Profile Details</Text>
+              <TouchableOpacity onPress={() => setShowEditModal(false)}>
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.inputLabel}>FULL NAME</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Full Name"
+              placeholderTextColor="#9CA3AF"
+            />
+
+            <Text style={styles.inputLabel}>FIELD PHONE HOTLINE</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={editPhone}
+              onChangeText={setEditPhone}
+              placeholder="+94 77 123 4567"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="phone-pad"
+            />
+
+            <Text style={styles.inputLabel}>TACTICAL CALL SIGN (OPTIONAL)</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={editCallSign}
+              onChangeText={setEditCallSign}
+              placeholder="LIAISON-DELTA-1"
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="characters"
+            />
+
+            <View style={styles.readOnlyBox}>
+              <Text style={styles.readOnlyText}>🔒 Role ({displayRole}) and Assigned Park ({profile.assignedPark}) are managed by System Admin.</Text>
+            </View>
+
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowEditModal(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalSaveBtn} onPress={handleSaveProfile} disabled={saving}>
+                {saving ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.modalSaveText}>Save Changes</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Modal 2: Change Password ── */}
+      <Modal visible={showPasswordModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Change Officer Password</Text>
+              <TouchableOpacity onPress={() => setShowPasswordModal(false)}>
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.inputLabel}>CURRENT PASSWORD</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              placeholder="••••••••"
+              placeholderTextColor="#9CA3AF"
+              secureTextEntry
+            />
+
+            <Text style={styles.inputLabel}>NEW PASSWORD</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              placeholder="Min 6 characters"
+              placeholderTextColor="#9CA3AF"
+              secureTextEntry
+            />
+
+            <Text style={styles.inputLabel}>CONFIRM NEW PASSWORD</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder="Re-enter new password"
+              placeholderTextColor="#9CA3AF"
+              secureTextEntry
+            />
+
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowPasswordModal(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalSaveBtn} onPress={handleChangePassword} disabled={saving}>
+                {saving ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.modalSaveText}>Update Password</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -306,17 +541,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   backBtn: { padding: 4 },
-  backBtnText: { fontSize: 24, color: '#374151', fontWeight: '600' },
+  backBtnText: { fontSize: 22, color: '#374151', fontWeight: '700' },
   headerTitleBox: { alignItems: 'center' },
   headerTitle: { fontSize: 16, fontWeight: '800', color: '#111827' },
-  headerSubtitle: { fontSize: 10, fontWeight: '700', color: '#6B7280', letterSpacing: 1 },
+  headerSubtitle: { fontSize: 10, fontWeight: '700', color: '#6B7280', letterSpacing: 0.5 },
   settingsBtn: { padding: 4 },
   settingsIcon: { fontSize: 20 },
 
-  scrollContent: { paddingHorizontal: 16, paddingTop: 8 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 12 },
 
   govBanner: {
     flexDirection: 'row',
@@ -340,7 +577,7 @@ const styles = StyleSheet.create({
   govLogoIcon: { fontSize: 24 },
   govTextGroup: { flex: 1 },
   govTitleSmall: { fontSize: 9, color: '#A7F3D0', fontWeight: '800', letterSpacing: 0.5 },
-  govTitleLarge: { fontSize: 16, color: '#FFFFFF', fontWeight: '900', marginVertical: 2 },
+  govTitleLarge: { fontSize: 15, color: '#FFFFFF', fontWeight: '900', marginVertical: 2 },
   govTitleSub: { fontSize: 10, color: '#D1FAE5', fontWeight: '600' },
 
   card: {
@@ -369,7 +606,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#10B981',
   },
-  avatarText: { fontSize: 24, fontWeight: '800', color: '#065F46' },
+  avatarText: { fontSize: 22, fontWeight: '800', color: '#065F46' },
   onlineDot: {
     position: 'absolute',
     bottom: 2,
@@ -383,7 +620,7 @@ const styles = StyleSheet.create({
   },
   profileInfo: { flex: 1 },
   nameRow: { flexDirection: 'row', alignItems: 'center' },
-  profileName: { fontSize: 18, fontWeight: '800', color: '#111827', marginRight: 6 },
+  profileName: { fontSize: 17, fontWeight: '800', color: '#111827', marginRight: 6 },
   verifiedIcon: { fontSize: 14 },
   profileRole: { fontSize: 13, color: '#374151', fontWeight: '600', marginTop: 2, marginBottom: 6 },
   clearanceBadge: {
@@ -396,7 +633,7 @@ const styles = StyleSheet.create({
     borderColor: '#BFDBFE',
   },
   clearanceText: { fontSize: 10, color: '#1D4ED8', fontWeight: '700' },
-  
+
   deptRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   deptIcon: { fontSize: 14, marginRight: 8, color: '#6B7280' },
   deptText: { fontSize: 11, color: '#6B7280', flex: 1 },
@@ -461,8 +698,7 @@ const styles = StyleSheet.create({
   prefTitle: { fontSize: 14, fontWeight: '700', color: '#374151', marginBottom: 2 },
   prefSub: { fontSize: 11, color: '#6B7280' },
   prefChevron: { fontSize: 20, color: '#9CA3AF', marginLeft: 8 },
-  prefActionIcon: { fontSize: 18, color: '#4B5563', marginLeft: 8 },
-  
+
   badgesRow: { flexDirection: 'row', marginTop: 4, gap: 6 },
   smallBadgeGreen: { backgroundColor: '#D1FAE5', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   smallBadgeGreenText: { fontSize: 9, fontWeight: '800', color: '#065F46' },
@@ -500,4 +736,60 @@ const styles = StyleSheet.create({
   logoutIcon: { fontSize: 16, marginRight: 8 },
   logoutText: { fontSize: 13, fontWeight: '800', color: '#B91C1C' },
   logoutHint: { textAlign: 'center', fontSize: 10, color: '#9CA3AF' },
+
+  // Modals
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: { fontSize: 16, fontWeight: '800', color: '#111827' },
+  modalCloseText: { fontSize: 18, color: '#9CA3AF', fontWeight: '700' },
+
+  inputLabel: { fontSize: 10, fontWeight: '800', color: '#374151', marginBottom: 4, letterSpacing: 0.5 },
+  modalInput: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#111827',
+    marginBottom: 12,
+  },
+  readOnlyBox: {
+    backgroundColor: '#EFF6FF',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  readOnlyText: { fontSize: 11, color: '#1E40AF' },
+
+  modalBtnRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 8 },
+  modalCancelBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: '#F3F4F6' },
+  modalCancelText: { fontSize: 13, fontWeight: '700', color: '#4B5563' },
+  modalSaveBtn: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 8, backgroundColor: '#1B4332' },
+  modalSaveText: { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
 });
+
+export default OfficerProfileScreen;

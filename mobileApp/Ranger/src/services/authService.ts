@@ -125,6 +125,40 @@ class AuthService {
   }
 
   /**
+   * Update user-editable profile details
+   */
+  async updateProfile(updates: { name?: string; phoneNumber?: string; dutyStatus?: boolean; callSign?: string }): Promise<any> {
+    try {
+      const response = await this.client.patch('/api/webapp/auth/me', updates);
+      if (response.data?.user?.name) {
+        this.userName = response.data.user.name;
+        await AsyncStorage.setItem('@ecoguard_auth_name_v1', response.data.user.name);
+      }
+      return response.data;
+    } catch (err: any) {
+      if (err.code === 'ERR_NETWORK' || !err.response) {
+        throw new Error('Network error. Unable to connect to the backend server.');
+      }
+      throw new Error(err.response?.data?.error || err.message || 'Failed to update profile');
+    }
+  }
+
+  /**
+   * Change user password
+   */
+  async changePassword(data: { currentPassword: string; newPassword: string }): Promise<any> {
+    try {
+      const response = await this.client.post('/api/webapp/auth/change-password', data);
+      return response.data;
+    } catch (err: any) {
+      if (err.code === 'ERR_NETWORK' || !err.response) {
+        throw new Error('Network error. Unable to connect to the backend server.');
+      }
+      throw new Error(err.response?.data?.error || err.message || 'Failed to change password');
+    }
+  }
+
+  /**
    * Check if backend server is reachable
    */
   async checkHealth(): Promise<boolean> {

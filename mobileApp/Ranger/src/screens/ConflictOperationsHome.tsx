@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,15 +11,75 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { THEME } from '../constants/theme';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { conflictApi } from '../services/conflictApi';
 import { authService } from '../services/authService';
-import { AppHeader } from '../components/AppHeader';
+
+// ─── Types & Interfaces ───────────────────────────────────────────────────────
 
 interface ConflictOperationsHomeProps {
   navigation: any;
 }
+
+// ─── Design System Constants (Matches Reports & Activity) ─────────────────────
+
+const SEVERITY_COLORS: Record<string, string> = {
+  Critical: '#DC2626',
+  High: '#EF4444',
+  Medium: '#F59E0B',
+  Low: '#10B981',
+};
+
+const SEVERITY_BG: Record<string, string> = {
+  Critical: '#FEE2E2',
+  High: '#FEF2F2',
+  Medium: '#FEF3C7',
+  Low: '#D1FAE5',
+};
+
+const ANIMAL_ICON: Record<string, string> = {
+  'Asian Elephant': '🐘',
+  'Sri Lankan Leopard': '🐆',
+  'Wild Boar': '🐗',
+  'Sloth Bear': '🐻',
+  'Mugger Crocodile': '🐊',
+  Other: '⚠️',
+};
+
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; color: string; bg: string; borderColor: string; dotColor: string }
+> = {
+  'Pending Verification': { label: 'PENDING', color: '#B45309', bg: '#FEF3C7', borderColor: '#FDE68A', dotColor: '#F59E0B' },
+  Verified: { label: 'VERIFIED', color: '#1D4ED8', bg: '#EFF6FF', borderColor: '#BFDBFE', dotColor: '#3B82F6' },
+  Dispatched: { label: 'DISPATCHED', color: '#6D28D9', bg: '#F3E8FF', borderColor: '#E9D5FF', dotColor: '#8B5CF6' },
+  'In Progress': { label: 'IN PROGRESS', color: '#0369A1', bg: '#E0F2FE', borderColor: '#BAE6FD', dotColor: '#0EA5E9' },
+  Resolved: { label: 'RESOLVED', color: '#047857', bg: '#D1FAE5', borderColor: '#A7F3D0', dotColor: '#10B981' },
+  Rejected: { label: 'REJECTED', color: '#B91C1C', bg: '#FEE2E2', borderColor: '#FECACA', dotColor: '#EF4444' },
+  'False Alarm': { label: 'REJECTED', color: '#B91C1C', bg: '#FEE2E2', borderColor: '#FECACA', dotColor: '#EF4444' },
+};
+
+function formatTimeAgo(dateStr?: string): string {
+  if (!dateStr) return 'Recently';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  if (isNaN(diff) || diff < 0) return 'Recently';
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+function getGreetingTime(): string {
+  const hours = new Date().getHours();
+  if (hours < 12) return 'Good morning';
+  if (hours < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+// ─── Main Operations Screen Component ─────────────────────────────────────────
 
 export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ navigation }) => {
   const { isConnected } = useNetworkStatus();
@@ -38,14 +98,14 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Fetch real backend summary data
   const loadData = useCallback(async () => {
     try {
       setError(null);
-      // Fetching for a specific park or all. We can pass park here if we have it.
       const data = await conflictApi.getDashboardSummary();
       setSummary(data);
     } catch (err: any) {
-      setError('Unable to load conflict reports.');
+      setError('Unable to load conflict operations.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -65,33 +125,20 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
     loadData();
   };
 
-  const handleLogout = async () => {
-    await authService.logout();
-    navigation.replace('Login');
-  };
+  // Critical/High count calculation
+  const criticalCount = useMemo(() => {
+    if (!summary?.reports) return 0;
+    return summary.reports.filter((r: any) => r.severity === 'Critical' || r.severity === 'High').length;
+  }, [summary?.reports]);
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'Critical': return '#DC2626';
-      case 'High': return '#EF4444';
-      case 'Medium': return '#F59E0B';
-      default: return '#10B981';
-    }
-  };
-
-  const getSeverityBgColor = (severity: string) => {
-    switch (severity) {
-      case 'Critical': return '#FEE2E2';
-      case 'High': return '#FEE2E2';
-      case 'Medium': return '#FEF3C7';
-      default: return '#D1FAE5';
-    }
-  };
+  const officerName = summary?.officer?.name || authService.userName || 'Officer';
+  const officerPark = summary?.officer?.assignedPark || 'WildGuard Operations';
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      {/* HEADER matching the screenshot design */}
+
+      {/* ── 1. Compact Brand Top Header ───────────────────────────────────────── */}
       <View style={styles.topBar}>
         <View style={styles.brandGroup}>
           <Image
@@ -107,202 +154,262 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
         <View style={styles.topRightControls}>
           <TouchableOpacity style={styles.notificationBtn}>
             <Text style={styles.notificationIcon}>🔔</Text>
-            <View style={styles.notificationBadge}><Text style={styles.badgeText}>2</Text></View>
+            {summary?.stats?.pending > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.badgeText}>{summary.stats.pending}</Text>
+              </View>
+            )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.avatarCircle} onPress={() => navigation.navigate('OfficerProfile')}>
+          <TouchableOpacity
+            style={styles.avatarCircle}
+            onPress={() => navigation.navigate('OfficerProfile')}
+          >
             <Text style={styles.avatarText}>
-              {summary?.officer?.name ? summary.officer.name.substring(0, 2).toUpperCase() : 'CO'}
+              {officerName ? officerName.substring(0, 2).toUpperCase() : 'CO'}
             </Text>
           </TouchableOpacity>
         </View>
       </View>
 
+      {/* ── 2. Offline / Network Status Banner ────────────────────────────── */}
       {!isConnected && (
         <View style={styles.offlineBanner}>
-          <Text style={styles.offlineText}>⚠️ No internet connection. Showing cached or limited data.</Text>
+          <View style={styles.offlineDot} />
+          <Text style={styles.offlineText}>Telemetry Disconnected • Offline Mode</Text>
         </View>
       )}
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#1B4332']} />}
-      >
-        {/* DISPATCH CONSOLE - Officer Info */}
-        <View style={styles.officerCard}>
-          <View style={styles.officerHeader}>
-            <Text style={styles.officerTag}>DISPATCH CONSOLE • LIVE FEED</Text>
-            <TouchableOpacity style={styles.calendarBtn}>
-              <Text style={styles.calendarIcon}>📅</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.officerGreeting}>Good morning, {summary?.officer?.name || 'Officer'}</Text>
-          <View style={styles.officerLocation}>
-            <Text style={styles.locationIcon}>📍</Text>
-            <Text style={styles.locationText}>{summary?.officer?.assignedPark || 'Unknown Park'} - Active Duty</Text>
-          </View>
+      {/* ── Main Scroll Content ───────────────────────────────────────────── */}
+      {loading && !refreshing ? (
+        <View style={styles.stateContainer}>
+          <ActivityIndicator size="large" color="#1B4332" />
+          <Text style={styles.stateTitle}>Loading conflict operations…</Text>
         </View>
-
-        {/* OPERATIONAL MANIFEST */}
-        <View style={styles.manifestHeader}>
-          <Text style={styles.sectionTitle}>Operational Manifest</Text>
-          <Text style={styles.syncStatusText}>Auto-synced just now</Text>
+      ) : error ? (
+        <View style={styles.stateContainer}>
+          <Text style={styles.errorEmoji}>⚠️</Text>
+          <Text style={styles.stateTitle}>Unable to load conflict operations.</Text>
+          <Text style={styles.stateSubtitle}>Check your network connection and try again.</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={loadData}>
+            <Text style={styles.retryBtnText}>RETRY</Text>
+          </TouchableOpacity>
         </View>
-
-        {loading && !refreshing ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#1B4332" />
-            <Text style={styles.loadingText}>Loading conflict operations...</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={loadData}>
-              <Text style={styles.retryButtonText}>Retry</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <>
-            <View style={styles.statsGrid}>
-              <View style={[styles.statCard, { borderColor: '#F59E0B' }]}>
-                <View style={styles.statHeader}>
-                  <Text style={[styles.statIcon, { color: '#F59E0B' }]}>🕒</Text>
-                  <View style={[styles.statDot, { backgroundColor: '#F59E0B' }]} />
-                </View>
-                <Text style={styles.statNumber}>{summary?.stats?.pending || 0}</Text>
-                <Text style={styles.statLabel}>PENDING</Text>
-              </View>
-
-              <View style={[styles.statCard, { borderColor: '#3B82F6' }]}>
-                <View style={styles.statHeader}>
-                  <Text style={[styles.statIcon, { color: '#3B82F6' }]}>🛡️</Text>
-                  <View style={[styles.statDot, { backgroundColor: '#3B82F6' }]} />
-                </View>
-                <Text style={styles.statNumber}>{summary?.stats?.verified || 0}</Text>
-                <Text style={styles.statLabel}>VERIFIED</Text>
-              </View>
-
-              <View style={[styles.statCard, { borderColor: '#8B5CF6' }]}>
-                <View style={styles.statHeader}>
-                  <Text style={[styles.statIcon, { color: '#8B5CF6' }]}>🚚</Text>
-                  <View style={[styles.statDot, { backgroundColor: '#8B5CF6' }]} />
-                </View>
-                <Text style={styles.statNumber}>{summary?.stats?.dispatched || 0}</Text>
-                <Text style={styles.statLabel}>DISPATCHED</Text>
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#1B4332']}
+              tintColor="#1B4332"
+            />
+          }
+        >
+          {/* ── 3. Officer Summary Card ────────────────────────────────────── */}
+          <View style={styles.officerCard}>
+            <View style={styles.officerHeader}>
+              <Text style={styles.officerTag}>DISPATCH CONSOLE • LIVE FEED</Text>
+              <View style={styles.dutyBadge}>
+                <View style={styles.dutyDot} />
+                <Text style={styles.dutyText}>ON DUTY</Text>
               </View>
             </View>
 
-            {/* NEEDS ATTENTION */}
-            <View style={styles.needsAttentionHeader}>
-              <View style={styles.needsAttentionTitleGroup}>
-                <View style={styles.redDot} />
-                <Text style={styles.sectionTitle}>Needs Attention</Text>
-              </View>
-              {summary?.reports?.filter((r: any) => r.severity === 'Critical' || r.severity === 'High').length > 0 && (
-                <View style={styles.criticalBadge}>
-                  <Text style={styles.criticalBadgeText}>
-                    {summary.reports.filter((r: any) => r.severity === 'Critical' || r.severity === 'High').length} CRITICAL
-                  </Text>
-                </View>
-              )}
+            <Text style={styles.officerGreeting}>
+              {getGreetingTime()}, {officerName}
+            </Text>
+
+            <View style={styles.officerLocation}>
+              <Text style={styles.officerLocationIcon}>📍</Text>
+              <Text style={styles.officerLocationText}>
+                {officerPark} • Sector Active
+              </Text>
             </View>
+          </View>
 
-            {summary?.reports?.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>No pending conflict reports.</Text>
+          {/* ── 4. Operational Manifest (Stats Grid) ────────────────────── */}
+          <View style={styles.manifestHeader}>
+            <Text style={styles.sectionTitle}>Operational Manifest</Text>
+            <Text style={styles.syncStatusText}>Live System Feed</Text>
+          </View>
+
+          <View style={styles.statsGrid}>
+            <TouchableOpacity
+              style={[styles.statCard, { borderColor: '#F59E0B' }]}
+              onPress={() => navigation.navigate('PendingReports')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.statHeader}>
+                <Text style={styles.statIcon}>🕒</Text>
+                <View style={[styles.statDot, { backgroundColor: '#F59E0B' }]} />
               </View>
-            ) : (
-              summary?.reports?.map((report: any, index: number) => {
-                const timeAgo = Math.max(1, Math.round((new Date().getTime() - new Date(report.reportedAt).getTime()) / 60000));
+              <Text style={styles.statNumber}>{summary?.stats?.pending || 0}</Text>
+              <Text style={[styles.statLabel, { color: '#B45309' }]}>PENDING</Text>
+            </TouchableOpacity>
 
-                return (
-                  <View
-                    key={report.reportId || index}
-                    style={[
-                      styles.reportCard,
-                      { borderLeftColor: getSeverityColor(report.severity) }
-                    ]}
-                  >
-                    <View style={styles.reportHeader}>
-                      <Text style={styles.reportId}>#{report.reportId}</Text>
-                      <View style={[styles.severityBadge, { backgroundColor: getSeverityBgColor(report.severity) }]}>
-                        <Text style={[styles.severityText, { color: getSeverityColor(report.severity) }]}>
+            <TouchableOpacity
+              style={[styles.statCard, { borderColor: '#3B82F6' }]}
+              onPress={() => navigation.navigate('PendingReports')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.statHeader}>
+                <Text style={styles.statIcon}>🛡️</Text>
+                <View style={[styles.statDot, { backgroundColor: '#3B82F6' }]} />
+              </View>
+              <Text style={styles.statNumber}>{summary?.stats?.verified || 0}</Text>
+              <Text style={[styles.statLabel, { color: '#1E40AF' }]}>VERIFIED</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.statCard, { borderColor: '#8B5CF6' }]}
+              onPress={() => navigation.navigate('ConflictActivity')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.statHeader}>
+                <Text style={styles.statIcon}>🚚</Text>
+                <View style={[styles.statDot, { backgroundColor: '#8B5CF6' }]} />
+              </View>
+              <Text style={styles.statNumber}>{summary?.stats?.dispatched || 0}</Text>
+              <Text style={[styles.statLabel, { color: '#6D28D9' }]}>DISPATCHED</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* ── 5. Needs Attention Section ────────────────────────────────── */}
+          <View style={styles.needsAttentionHeader}>
+            <View style={styles.needsAttentionTitleGroup}>
+              <View style={styles.redDot} />
+              <Text style={styles.sectionTitle}>Needs Attention</Text>
+            </View>
+            {criticalCount > 0 && (
+              <View style={styles.criticalBadge}>
+                <Text style={styles.criticalBadgeText}>{criticalCount} HIGH PRIORITY</Text>
+              </View>
+            )}
+          </View>
+
+          {!summary?.reports || summary.reports.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyEmoji}>✅</Text>
+              <Text style={styles.emptyTitle}>No reports needing immediate attention.</Text>
+              <Text style={styles.emptySubtitle}>You're all caught up with high-priority field dispatches.</Text>
+            </View>
+          ) : (
+            summary.reports.map((report: any, index: number) => {
+              const sevColor = SEVERITY_COLORS[report.severity] ?? '#6B7280';
+              const sevBg = SEVERITY_BG[report.severity] ?? '#F3F4F6';
+              const statusCfg =
+                STATUS_CONFIG[report.status] ?? STATUS_CONFIG['Pending Verification'];
+
+              return (
+                <View
+                  key={report.reportId || index}
+                  style={[styles.reportCard, { borderLeftColor: sevColor }]}
+                >
+                  {/* Card Top Row */}
+                  <View style={styles.reportHeader}>
+                    <Text style={styles.reportId}>#{report.reportId}</Text>
+                    <View style={styles.reportBadgeGroup}>
+                      <View style={[styles.severityBadge, { backgroundColor: sevBg }]}>
+                        <Text style={[styles.severityText, { color: sevColor }]}>
                           {report.severity.toUpperCase()}
                         </Text>
                       </View>
-                    </View>
 
-                    <View style={styles.reportTitleRow}>
-                      <Text style={styles.reportIcon}>
-                        {report.animalSpecies === 'Asian Elephant' ? '🐘' :
-                          report.animalSpecies === 'Sri Lankan Leopard' ? '🐆' :
-                            report.animalSpecies === 'Wild Boar' ? '🐗' :
-                              report.animalSpecies === 'Mugger Crocodile' ? '🐊' : '⚠️'}
-                      </Text>
-                      <Text style={styles.reportTitle} numberOfLines={2}>
-                        {report.conflictType}
-                      </Text>
-                      <View style={styles.statusBadge}>
-                        <View style={styles.statusDot} />
-                        <Text style={styles.statusText}>{report.status.toUpperCase()}</Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.reportDetailsBox}>
-                      <View style={styles.detailRow}>
-                        <Text style={styles.detailIcon}>📍</Text>
-                        <Text style={styles.detailText} numberOfLines={1}>{report.locationName} ({report.park})</Text>
-                      </View>
-                      <View style={styles.detailRow}>
-                        <Text style={styles.detailIcon}>🕒</Text>
-                        <Text style={styles.detailText}>{timeAgo} minutes ago</Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.metaRow}>
-                      <View style={styles.metaItem}>
-                        <Text style={styles.metaIcon}>🐾</Text>
-                        <Text style={styles.metaText}>{report.animalSpecies}</Text>
-                      </View>
-                      <View style={styles.metaItem}>
-                        <Text style={styles.metaTextCoord}>
-                          {report.coordinates ? `${report.coordinates.latitude.toFixed(4)}° N, ${report.coordinates.longitude.toFixed(4)}° E` : 'GPS N/A'}
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          { backgroundColor: statusCfg.bg, borderColor: statusCfg.borderColor },
+                        ]}
+                      >
+                        <View style={[styles.statusDot, { backgroundColor: statusCfg.dotColor }]} />
+                        <Text style={[styles.statusText, { color: statusCfg.color }]}>
+                          {statusCfg.label}
                         </Text>
                       </View>
+                    </View>
+                  </View>
+
+                  {/* Conflict Type & Animal Emoji */}
+                  <View style={styles.reportTitleRow}>
+                    <Text style={styles.reportIcon}>
+                      {ANIMAL_ICON[report.animalSpecies] ?? '⚠️'}
+                    </Text>
+                    <Text style={styles.reportTitle} numberOfLines={1}>
+                      {report.conflictType}
+                    </Text>
+                  </View>
+
+                  {/* Location Details */}
+                  <View style={styles.locationRow}>
+                    <Text style={styles.locationIcon}>📍</Text>
+                    <Text style={styles.locationText} numberOfLines={1}>
+                      {report.locationName}
+                      {report.park ? ` (${report.park})` : ''}
+                    </Text>
+                  </View>
+
+                  {/* Footer & Action */}
+                  <View style={styles.cardFooter}>
+                    <View style={styles.footerLeft}>
+                      <Text style={styles.timeIcon}>🕒</Text>
+                      <Text style={styles.timeText}>{formatTimeAgo(report.reportedAt)}</Text>
+                      <Text style={styles.footerSep}>•</Text>
+                      <Text style={styles.speciesText}>{report.animalSpecies}</Text>
                     </View>
 
                     <TouchableOpacity
                       style={styles.reviewBtn}
-                      onPress={() => navigation.navigate('IncidentDetails', { id: report.reportId })}
+                      onPress={() =>
+                        navigation.navigate('ConflictReportDetails', { reportId: report.reportId })
+                      }
+                      activeOpacity={0.8}
                     >
                       <Text style={styles.reviewBtnText}>REVIEW REPORT →</Text>
                     </TouchableOpacity>
                   </View>
-                );
-              })
-            )}
+                </View>
+              );
+            })
+          )}
 
-            <TouchableOpacity style={styles.viewAllBtn} onPress={() => navigation.navigate('PendingReports')}>
-              <Text style={styles.viewAllIcon}>📄</Text>
-              <Text style={styles.viewAllText}>VIEW ALL PENDING REPORTS</Text>
-              <View style={styles.viewAllBadge}>
-                <Text style={styles.viewAllBadgeText}>{summary?.stats?.pending || 0}</Text>
-              </View>
-            </TouchableOpacity>
-          </>
-        )}
-      </ScrollView>
+          {/* ── 6. View All Pending Reports Action Button ─────────────────── */}
+          <TouchableOpacity
+            style={styles.viewAllBtn}
+            onPress={() => navigation.navigate('PendingReports')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.viewAllIcon}>📄</Text>
+            <Text style={styles.viewAllText}>View All Pending Reports</Text>
+            <View style={styles.viewAllBadge}>
+              <Text style={styles.viewAllBadgeText}>{summary?.stats?.pending || 0}</Text>
+            </View>
+            <Text style={styles.viewAllArrow}>→</Text>
+          </TouchableOpacity>
 
-      {/* BOTTOM NAVIGATION REPLACEMENT TO MATCH UI */}
+          <View style={{ height: 24 }} />
+        </ScrollView>
+      )}
+
+      {/* ── 7. Bottom Navigation Bar (Matches Reports & Activity) ───────── */}
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItemActive}>
           <Text style={styles.navIconActive}>🛡</Text>
           <Text style={styles.navLabelActive}>Operations</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('PendingReports')}>
+
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => navigation.navigate('PendingReports')}
+        >
           <Text style={styles.navIcon}>📋</Text>
           <Text style={styles.navLabel}>Reports</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('ConflictActivity')}>
+
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => navigation.navigate('ConflictActivity')}
+        >
           <Text style={styles.navIcon}>🕒</Text>
           <Text style={styles.navLabel}>Activity</Text>
         </TouchableOpacity>
@@ -311,11 +418,15 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
   );
 };
 
+// ─── Styles (Identical Design System to Reports & Activity) ───────────────────
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F3F4F6',
   },
+
+  // 1. Top Bar Header
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -387,79 +498,111 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+
+  // 2. Offline Banner
   offlineBanner: {
-    backgroundColor: '#FEF2F2',
-    padding: 8,
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#FCA5A5',
+    borderBottomColor: '#FECACA',
+  },
+  offlineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    marginRight: 8,
   },
   offlineText: {
-    color: '#991B1B',
     fontSize: 12,
+    color: '#991B1B',
     fontWeight: '600',
   },
+
+  // Scroll Content Area
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 14,
+    paddingTop: 14,
     paddingBottom: 24,
   },
+
+  // 3. Officer Summary Card
   officerCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 2,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
   },
   officerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   officerTag: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#047857',
     fontWeight: '800',
     letterSpacing: 0.5,
   },
-  calendarBtn: {
-    backgroundColor: '#F3F4F6',
-    padding: 6,
-    borderRadius: 6,
+  dutyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
   },
-  calendarIcon: {
-    fontSize: 14,
+  dutyDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+    marginRight: 4,
+  },
+  dutyText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#065F46',
   },
   officerGreeting: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#111827',
-    marginBottom: 10,
+    marginBottom: 6,
   },
   officerLocation: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  locationIcon: {
-    fontSize: 14,
-    marginRight: 6,
-  },
-  locationText: {
+  officerLocationIcon: {
     fontSize: 13,
+    marginRight: 5,
+  },
+  officerLocationText: {
+    fontSize: 12,
     color: '#6B7280',
     fontWeight: '500',
   },
+
+  // 4. Manifest Header & Stats Grid
   manifestHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   sectionTitle: {
     fontSize: 15,
@@ -469,68 +612,34 @@ const styles = StyleSheet.create({
   syncStatusText: {
     fontSize: 11,
     color: '#6B7280',
-  },
-  loadingContainer: {
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    color: '#6B7280',
-    fontSize: 14,
-  },
-  errorContainer: {
-    padding: 24,
-    alignItems: 'center',
-    backgroundColor: '#FEF2F2',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    marginBottom: 20,
-  },
-  errorText: {
-    color: '#991B1B',
-    marginBottom: 12,
-    fontWeight: '600',
-  },
-  retryButton: {
-    backgroundColor: '#991B1B',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 13,
+    fontWeight: '500',
   },
   statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: 18,
   },
   statCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 12,
-    marginHorizontal: 4,
+    marginHorizontal: 3,
     borderWidth: 1.5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
-    elevation: 1,
+    elevation: 2,
   },
   statHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+    alignItems: 'center',
+    marginBottom: 6,
   },
   statIcon: {
-    fontSize: 18,
+    fontSize: 16,
   },
   statDot: {
     width: 6,
@@ -538,38 +647,39 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   statNumber: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
     color: '#111827',
     marginBottom: 2,
   },
   statLabel: {
     fontSize: 10,
-    fontWeight: '700',
-    color: '#4B5563',
+    fontWeight: '800',
     letterSpacing: 0.5,
   },
+
+  // 5. Needs Attention Section
   needsAttentionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   needsAttentionTitleGroup: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   redDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: '#EF4444',
-    marginRight: 8,
+    marginRight: 6,
   },
   criticalBadge: {
     backgroundColor: '#FEE2E2',
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: 4,
   },
   criticalBadgeText: {
@@ -578,52 +688,40 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.5,
   },
-  emptyState: {
-    backgroundColor: '#FFFFFF',
-    padding: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderStyle: 'dashed',
-    marginBottom: 20,
-  },
-  emptyStateText: {
-    color: '#6B7280',
-    fontSize: 14,
-    fontWeight: '500',
-  },
+
+  // Report Cards in Needs Attention
   reportCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
     borderLeftWidth: 4,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.07,
     shadowRadius: 6,
     elevation: 3,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-    borderRightColor: '#F3F4F6',
-    borderTopColor: '#F3F4F6',
-    borderBottomColor: '#F3F4F6',
   },
   reportHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   reportId: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#4B5563',
+    color: '#374151',
+  },
+  reportBadgeGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   severityBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 4,
   },
@@ -631,113 +729,116 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
   },
-  reportTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  reportIcon: {
-    fontSize: 20,
-    marginRight: 8,
-  },
-  reportTitle: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#111827',
-  },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#FDE68A',
-    marginLeft: 8,
   },
   statusDot: {
-    width: 6,
-    height: 6,
+    width: 5,
+    height: 5,
     borderRadius: 3,
-    backgroundColor: '#F59E0B',
     marginRight: 4,
   },
   statusText: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#B45309',
   },
-  reportDetailsBox: {
-    backgroundColor: '#F8F9FB',
-    borderRadius: 8,
-    padding: 12,
+  reportTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  reportIcon: {
+    fontSize: 18,
+    marginRight: 8,
+  },
+  reportTitle: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  locationIcon: {
+    fontSize: 13,
+    marginRight: 5,
+  },
+  locationText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#4B5563',
+    fontWeight: '500',
+  },
+  cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingTop: 10,
   },
-  detailRow: {
+  footerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    marginRight: 8,
   },
-  detailIcon: {
-    fontSize: 14,
-    marginRight: 6,
-  },
-  detailText: {
+  timeIcon: {
     fontSize: 12,
-    color: '#4B5563',
-    fontWeight: '600',
+    marginRight: 4,
   },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 4,
-  },
-  metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  metaIcon: {
+  timeText: {
     fontSize: 12,
-    marginRight: 6,
-    opacity: 0.7,
+    color: '#6B7280',
+    fontWeight: '500',
   },
-  metaText: {
+  footerSep: {
+    fontSize: 12,
+    color: '#D1D5DB',
+    marginHorizontal: 4,
+  },
+  speciesText: {
     fontSize: 11,
     color: '#6B7280',
     fontWeight: '500',
   },
-  metaTextCoord: {
-    fontSize: 10,
-    color: '#9CA3AF',
-    fontFamily: 'monospace',
-  },
   reviewBtn: {
     backgroundColor: '#1B4332',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
   },
   reviewBtnText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
+
+  // 6. View All Pending Button
   viewAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2D6A4F',
-    borderRadius: 8,
+    backgroundColor: '#1B4332',
+    borderRadius: 10,
     paddingVertical: 14,
-    marginTop: 8,
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    marginTop: 6,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   viewAllIcon: {
     fontSize: 16,
@@ -747,26 +848,97 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
+    flex: 1,
   },
   viewAllBadge: {
     backgroundColor: '#A7F3D0',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
-    marginLeft: 10,
+    marginRight: 8,
   },
   viewAllBadgeText: {
     color: '#065F46',
     fontSize: 11,
     fontWeight: '800',
   },
+  viewAllArrow: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+
+  // States
+  stateContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  errorEmoji: {
+    fontSize: 36,
+    marginBottom: 12,
+  },
+  stateTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#374151',
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  stateSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryBtn: {
+    backgroundColor: '#1B4332',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  emptyBox: {
+    backgroundColor: '#FFFFFF',
+    padding: 28,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+    marginBottom: 16,
+  },
+  emptyEmoji: {
+    fontSize: 28,
+    marginBottom: 8,
+  },
+  emptyTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#374151',
+    marginBottom: 4,
+  },
+  emptySubtitle: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+
+  // 7. Bottom Navigation (Exact Match to Reports & Activity)
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
-    paddingBottom: 20, // safe area padding approx
+    paddingBottom: 20,
     paddingTop: 10,
   },
   navItem: {
@@ -787,7 +959,7 @@ const styles = StyleSheet.create({
   navIcon: {
     fontSize: 20,
     marginBottom: 2,
-    opacity: 0.6,
+    color: '#9CA3AF',
   },
   navIconActive: {
     fontSize: 20,
