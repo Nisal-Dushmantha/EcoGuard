@@ -30,7 +30,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ navigation }) => {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 1000,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
       easing: Easing.out(Easing.cubic),
     }).start();
 

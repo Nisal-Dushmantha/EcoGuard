@@ -1,8 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { incidentApi } from './incidentApi'; // For sharing base URL or can redefine
-
-const DEFAULT_API_BASE = 'http://192.168.8.200:5000';
+import { API_BASE_URL } from '../config/apiConfig';
 
 class AuthService {
   private client: AxiosInstance;
@@ -12,7 +10,7 @@ class AuthService {
 
   constructor() {
     this.client = axios.create({
-      baseURL: DEFAULT_API_BASE,
+      baseURL: API_BASE_URL,
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',
