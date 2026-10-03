@@ -44,7 +44,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const validRole: UserRole = ['Park Manager', 'Conservation Researcher', 'Ranger', 'Admin', 'Community Liaison Officer'].includes(role)
+    const validRole: UserRole = ['Park Manager', 'Conservation Researcher', 'Ranger', 'Admin', 'Community Liaison Officer', 'Community Member'].includes(role)
       ? role
       : 'Park Manager';
 

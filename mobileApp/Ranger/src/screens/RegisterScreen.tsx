@@ -38,9 +38,10 @@ const AVAILABLE_ZONES = [
 ];
 
 const ROLES = [
-  'Park Manager',
-  'Ranger',
+  'Community Member',
   'Community Liaison Officer',
+  'Ranger',
+  'Park Manager',
   'Conservation Researcher',
 ];
 
@@ -137,7 +138,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     if (!name.trim()) newErrors.name = 'Full Name is required';
     if (!email.trim() || !email.includes('@')) newErrors.email = 'Valid Official Email is required';
     if (!role) newErrors.role = 'System Role is required';
-    if (!assignedPark) newErrors.assignedPark = 'Assigned Park is required';
+    if (role !== 'Community Member' && !assignedPark) newErrors.assignedPark = 'Assigned Park is required';
     if (password.length < 6) newErrors.password = 'Minimum 6 characters';
     if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
 

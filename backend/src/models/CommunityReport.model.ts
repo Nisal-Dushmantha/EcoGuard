@@ -21,6 +21,7 @@ export type ConflictStatus = 'Pending Verification' | 'Verified' | 'Rejected' | 
 
 export interface ICommunityReport extends Document {
   reportId: string;
+  reporterId?: string;
   reporterName: string;
   contactNumber?: string;
   park: string;
@@ -35,6 +36,7 @@ export interface ICommunityReport extends Document {
   reportedAt: Date;
   status: ConflictStatus;
   description: string;
+  photoUrl?: string;
   actionTaken?: string;
   rejectionReason?: string;
   verifiedBy?: string;
@@ -58,6 +60,11 @@ const CommunityReportSchema = new Schema<ICommunityReport>(
       required: [true, 'Report ID is required'],
       unique: true,
       trim: true,
+      index: true,
+    },
+    reporterId: {
+      type: String,
+      default: '',
       index: true,
     },
     reporterName: {
@@ -132,6 +139,10 @@ const CommunityReportSchema = new Schema<ICommunityReport>(
       type: String,
       required: [true, 'Description is required'],
       trim: true,
+    },
+    photoUrl: {
+      type: String,
+      default: '',
     },
     actionTaken: {
       type: String,

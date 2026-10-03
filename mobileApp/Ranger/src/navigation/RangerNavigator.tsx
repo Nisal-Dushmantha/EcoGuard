@@ -22,14 +22,19 @@ import { DispatchSuccessScreen } from '../screens/DispatchSuccessScreen';
 import { ConflictActivityScreen } from '../screens/ConflictActivityScreen';
 import { OfficerProfileScreen } from '../screens/OfficerProfileScreen';
 import { ActiveIncidentTrackingScreen } from '../screens/ActiveIncidentTrackingScreen';
+import { CommunityMemberDashboard } from '../screens/CommunityMemberDashboard';
+import { ReportWildlifeConflictScreen } from '../screens/ReportWildlifeConflictScreen';
+import { ReportSubmittedSuccessScreen } from '../screens/ReportSubmittedSuccessScreen';
+import { CommunityMemberReportsScreen } from '../screens/CommunityMemberReportsScreen';
 import { LocalIncidentRecord } from '../types/incident';
+import { authService } from '../services/authService';
 
 // Navigation state container supporting standalone and React Navigation environments
 export const RangerNavigator: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<string>('Splash'); // Default to splash
   const [activeTab, setActiveTab] = useState<'Home' | 'Incidents' | 'Alerts'>('Home');
   const [screenParams, setScreenParams] = useState<any>({});
-  const [screenHistory, setScreenHistory] = useState<string[]>(['RangerDashboard']);
+  const [screenHistory, setScreenHistory] = useState<string[]>(['Splash']);
 
   // Navigation controller passed to screens
   const navigation = {
@@ -37,7 +42,10 @@ export const RangerNavigator: React.FC = () => {
       if (params) setScreenParams(params);
       if (screen === 'HomeTab') {
         setActiveTab('Home');
-        setCurrentScreen('RangerDashboard');
+        const r = authService.userRole?.trim().toUpperCase().replace(/\s+/g, '_');
+        if (r === 'COMMUNITY_MEMBER') setCurrentScreen('CommunityMemberDashboard');
+        else if (r === 'COMMUNITY_LIAISON_OFFICER') setCurrentScreen('ConflictOperationsHome');
+        else setCurrentScreen('RangerDashboard');
       } else if (screen === 'IncidentsTab') {
         setActiveTab('Incidents');
         setCurrentScreen('MyIncidents');
@@ -51,7 +59,7 @@ export const RangerNavigator: React.FC = () => {
     },
     replace: (screen: string, params?: any) => {
       if (params) setScreenParams(params);
-      if (screen === 'RangerMainTabs' || screen === 'RangerHome' || screen === 'ConflictOperationsHome') {
+      if (screen === 'RangerMainTabs' || screen === 'RangerHome' || screen === 'ConflictOperationsHome' || screen === 'CommunityMemberDashboard') {
         setActiveTab('Home');
         setCurrentScreen(screen);
         setScreenHistory([screen]);
@@ -67,7 +75,14 @@ export const RangerNavigator: React.FC = () => {
         setScreenHistory(newHistory);
         setCurrentScreen(prev);
       } else {
-        setCurrentScreen('RangerDashboard');
+        const r = authService.userRole?.trim().toUpperCase().replace(/\s+/g, '_');
+        if (r === 'COMMUNITY_MEMBER') {
+          setCurrentScreen('CommunityMemberDashboard');
+        } else if (r === 'COMMUNITY_LIAISON_OFFICER') {
+          setCurrentScreen('ConflictOperationsHome');
+        } else {
+          setCurrentScreen('RangerDashboard');
+        }
         setActiveTab('Home');
       }
     },
@@ -88,6 +103,24 @@ export const RangerNavigator: React.FC = () => {
         return <LoginScreen navigation={navigation} />;
       case 'Register':
         return <RegisterScreen navigation={navigation} />;
+      case 'CommunityMemberDashboard':
+        return <CommunityMemberDashboard navigation={navigation} />;
+      case 'ReportWildlifeConflict':
+        return <ReportWildlifeConflictScreen navigation={navigation} />;
+      case 'ReportSubmittedSuccess':
+        return (
+          <ReportSubmittedSuccessScreen
+            route={{ params: screenParams }}
+            navigation={navigation}
+          />
+        );
+      case 'CommunityMemberReports':
+        return (
+          <CommunityMemberReportsScreen
+            route={{ params: screenParams }}
+            navigation={navigation}
+          />
+        );
       case 'LogIncident':
         return <LogIncidentScreen navigation={navigation} />;
       case 'IncidentSuccess':
@@ -162,8 +195,9 @@ export const RangerNavigator: React.FC = () => {
         return <AlertsScreen navigation={navigation} />;
       case 'RangerHome':
       case 'RangerDashboard':
-      default:
         return <RangerDashboardScreen navigation={navigation} />;
+      default:
+        return <SplashScreen navigation={navigation} />;
     }
   };
 

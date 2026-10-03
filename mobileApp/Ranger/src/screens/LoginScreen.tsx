@@ -8,6 +8,7 @@ import {
   ScrollView,
   StyleSheet,
   Image,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { THEME } from '../constants/theme';
@@ -62,16 +63,42 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       if (onLoginSuccess) {
         onLoginSuccess(result.user);
       }
-      const role = result.user.role;
-      if (role === 'Community Liaison Officer') {
-        navigation.replace('ConflictOperationsHome');
-      } else if (role === 'Ranger') {
-        navigation.replace('RangerMainTabs');
-      } else if (role === 'Park Manager') {
-        navigation.replace('RangerMainTabs');
-      } else {
-        await authService.logout();
-        setError(`Access Denied: The role '${role}' is not supported on the mobile app.`);
+      const rawRole = result.user?.role || '';
+      const normalizedRole = rawRole
+        .trim()
+        .toUpperCase()
+        .replace(/\s+/g, '_');
+
+      switch (normalizedRole) {
+        case 'COMMUNITY_LIAISON_OFFICER':
+          navigation.replace('ConflictOperationsHome');
+          break;
+
+        case 'COMMUNITY_MEMBER':
+          navigation.replace('CommunityMemberDashboard');
+          break;
+
+        case 'RANGER':
+          navigation.replace('RangerMainTabs');
+          break;
+
+        case 'PARK_MANAGER':
+          await authService.logout();
+          Alert.alert(
+            'Web Access Required',
+            'Park Manager accounts should use the web application.'
+          );
+          setError('Park Manager accounts should use the web application.');
+          break;
+
+        default:
+          await authService.logout();
+          Alert.alert(
+            'Unsupported Role',
+            'This account role is not supported on the mobile application.'
+          );
+          setError(`Access Denied: The role '${rawRole}' is not supported on the mobile app.`);
+          break;
       }
     } catch (err: any) {
       setError(err.message || 'Login failed. Please verify credentials.');

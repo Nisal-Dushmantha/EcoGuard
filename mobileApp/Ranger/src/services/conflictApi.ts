@@ -28,6 +28,7 @@ export interface ConflictReport {
   resolvedBy?: string;
   resolutionNote?: string;
   officerNotes?: string;
+  photoUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -39,6 +40,7 @@ export interface ConflictReportsResponse {
 
 export interface GetReportsParams {
   status?: string;
+  reporterId?: string;
   search?: string;
   severity?: string;
   animal?: string;
@@ -73,6 +75,46 @@ class ConflictApiService {
 
   public setBaseURL(url: string) {
     this.client.defaults.baseURL = url;
+  }
+
+  // ── Create Report (Community Member) ──────────────────────────────────────────
+  async createConflictReport(payload: {
+    reporterName?: string;
+    contactNumber?: string;
+    conflictType: string;
+    animalSpecies: string;
+    severity?: string;
+    locationName: string;
+    park?: string;
+    latitude?: number;
+    longitude?: number;
+    description: string;
+    photoUrl?: string;
+  }): Promise<ConflictReport> {
+    try {
+      const response = await this.client.post('/api/mobile/conflicts/reports', payload);
+      if (response.data?.success) return response.data.data;
+      throw new Error(response.data?.message || 'Failed to submit report');
+    } catch (err: any) {
+      if (err.code === 'ERR_NETWORK' || !err.response) {
+        throw new Error('Network error. Unable to connect to the backend server.');
+      }
+      throw new Error(err.response?.data?.message || err.message || 'Error submitting report');
+    }
+  }
+
+  // ── Member Dashboard Summary ───────────────────────────────────────────────
+  async getMemberDashboard(): Promise<any> {
+    try {
+      const response = await this.client.get('/api/mobile/conflicts/member-dashboard');
+      if (response.data?.success) return response.data.data;
+      throw new Error('Failed to fetch member dashboard');
+    } catch (err: any) {
+      if (err.code === 'ERR_NETWORK' || !err.response) {
+        throw new Error('Network error. Unable to connect to the backend server.');
+      }
+      throw new Error(err.response?.data?.message || err.message || 'Error fetching dashboard');
+    }
   }
 
   // ── Dashboard Summary ────────────────────────────────────────────────────────

@@ -87,7 +87,8 @@ export const getDashboardSummary = async (req: AuthenticatedRequest | Request, r
 export const getConflictReports = async (req: Request, res: Response) => {
   try {
     const {
-      status = 'Pending Verification',
+      status,
+      reporterId,
       search,
       severity,
       animal,
@@ -98,12 +99,25 @@ export const getConflictReports = async (req: Request, res: Response) => {
 
     const filter: any = {};
 
-    // Status - support comma-separated list
-    const statuses = status.split(',').map((s: string) => s.trim()).filter(Boolean);
-    if (statuses.length === 1) {
-      filter.status = statuses[0];
-    } else if (statuses.length > 1) {
-      filter.status = { $in: statuses };
+    // Status - support comma-separated list or optional 'all'
+    if (status && status !== 'all' && status !== 'All') {
+      const statuses = status.split(',').map((s: string) => s.trim()).filter(Boolean);
+      if (statuses.length === 1) {
+        filter.status = statuses[0];
+      } else if (statuses.length > 1) {
+        filter.status = { $in: statuses };
+      }
+    }
+
+    // Reporter ID / Name filter
+    if (reporterId) {
+      const userId = (req as AuthenticatedRequest).user?.id || reporterId;
+      const userName = (req as AuthenticatedRequest).user?.name;
+      const conditions: any[] = [{ reporterId: userId }];
+      if (userName) {
+        conditions.push({ reporterName: userName });
+      }
+      filter.$or = conditions;
     }
 
     // Optional field filters
@@ -391,6 +405,117 @@ export const updateConflictStatus = async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     console.error('Error in updateConflictStatus:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+/**
+ * POST /api/mobile/conflicts/reports
+ * Submit a new conflict report (Used by Community Members)
+ */
+export const createConflictReport = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as AuthenticatedRequest).user?.id;
+    const userName = (req as AuthenticatedRequest).user?.name;
+
+    const {
+      reporterName,
+      contactNumber,
+      conflictType,
+      animalSpecies,
+      animalType,
+      severity = 'Medium',
+      locationName,
+      location,
+      park = 'Yala National Park',
+      latitude,
+      longitude,
+      description,
+      photoUrl,
+      photoUri,
+    } = req.body;
+
+    const rName = reporterName || userName || 'Community Member';
+    const rContact = contactNumber || '';
+    const locName = locationName || location || 'Local Sector';
+    const species = animalSpecies || animalType || 'Asian Elephant';
+    const finalPhoto = photoUrl || photoUri || '';
+
+    // Auto generate unique reportId e.g. CR-2026-XXXX
+    const randomCode = Math.floor(1000 + Math.random() * 9000);
+    const reportId = `CR-2026-${randomCode}`;
+
+    const newReport = await CommunityReport.create({
+      reportId,
+      reporterName: rName.trim(),
+      contactNumber: rContact.trim(),
+      reporterId: userId || '',
+      park: park.trim(),
+      locationName: locName.trim(),
+      coordinates: (latitude && longitude) ? { latitude: Number(latitude), longitude: Number(longitude) } : undefined,
+      conflictType: conflictType || 'Other Conflict',
+      animalSpecies: species,
+      severity: ['Low', 'Medium', 'High', 'Critical'].includes(severity) ? severity : 'Medium',
+      reportedAt: new Date(),
+      status: 'Pending Verification',
+      description: (description || '').trim(),
+      photoUrl: finalPhoto,
+    });
+
+    console.log(`[Backend] Created Community Conflict Report: ${newReport.reportId} (Status: Pending Verification)`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Conflict report submitted successfully.',
+      data: newReport.toObject(),
+    });
+  } catch (err: any) {
+    console.error('Error in createConflictReport:', err);
+    res.status(500).json({ success: false, message: err?.message || 'Failed to submit conflict report' });
+  }
+};
+
+/**
+ * GET /api/mobile/conflicts/member-dashboard
+ * Dashboard stats & recent reports for logged-in Community Member
+ */
+export const getCommunityMemberDashboard = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as AuthenticatedRequest).user?.id;
+    const userName = (req as AuthenticatedRequest).user?.name;
+
+    const filter: any = {};
+    if (userId || userName) {
+      const conditions: any[] = [];
+      if (userId) conditions.push({ reporterId: userId });
+      if (userName) conditions.push({ reporterName: userName });
+      filter.$or = conditions;
+    }
+
+    const totalCount = await CommunityReport.countDocuments(filter);
+    const pendingCount = await CommunityReport.countDocuments({ ...filter, status: 'Pending Verification' });
+    const inProgressCount = await CommunityReport.countDocuments({ ...filter, status: { $in: ['Dispatched', 'In Progress', 'Verified'] } });
+    const resolvedCount = await CommunityReport.countDocuments({ ...filter, status: 'Resolved' });
+
+    const recentReports = await CommunityReport.find(filter)
+      .sort({ reportedAt: -1 })
+      .limit(5)
+      .lean();
+
+    res.json({
+      success: true,
+      data: {
+        stats: {
+          myReports: totalCount,
+          pending: pendingCount,
+          inProgress: inProgressCount,
+          resolved: resolvedCount,
+        },
+        reports: recentReports,
+      },
+    });
+  } catch (err: any) {
+    console.error('Error in getCommunityMemberDashboard:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };

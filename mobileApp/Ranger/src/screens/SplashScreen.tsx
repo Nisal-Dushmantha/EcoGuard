@@ -46,14 +46,26 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ navigation }) => {
     setIsInitializing(true);
     const hasAuth = await authService.loadStoredAuth();
     if (hasAuth && authService.userRole) {
-      if (authService.userRole === 'Community Liaison Officer') {
-        navigation.replace('ConflictOperationsHome');
-      } else if (authService.userRole === 'Ranger') {
-        navigation.replace('RangerMainTabs');
-      } else if (authService.userRole === 'Park Manager') {
-        navigation.replace('RangerMainTabs');
-      } else {
-        navigation.replace('Login');
+      const normalizedRole = authService.userRole
+        ?.trim()
+        .toUpperCase()
+        .replace(/\s+/g, '_');
+
+      switch (normalizedRole) {
+        case 'COMMUNITY_LIAISON_OFFICER':
+          navigation.replace('ConflictOperationsHome');
+          break;
+        case 'COMMUNITY_MEMBER':
+          navigation.replace('CommunityMemberDashboard');
+          break;
+        case 'RANGER':
+          navigation.replace('RangerMainTabs');
+          break;
+        case 'PARK_MANAGER':
+        default:
+          await authService.logout();
+          navigation.replace('Login');
+          break;
       }
     } else {
       navigation.replace('Login');

@@ -7,6 +7,8 @@ import {
   rejectConflictReport,
   dispatchConflictReport,
   updateConflictStatus,
+  createConflictReport,
+  getCommunityMemberDashboard,
 } from '../controllers/conflict.controller.js';
 import { authenticateToken, requireRole } from '../../../middlewares/auth.middleware.js';
 
@@ -20,7 +22,17 @@ router.get(
   getDashboardSummary
 );
 
-// Pending Reports screen - list with filters/search/sort
+// Community Member Dashboard
+router.get(
+  '/member-dashboard',
+  authenticateToken,
+  getCommunityMemberDashboard
+);
+
+// Submit a new conflict report (Community Member & Mobile users)
+router.post('/reports', authenticateToken, createConflictReport);
+
+// Conflict Reports list with filters/search/sort
 router.get('/reports', getConflictReports);
 
 // Single report details

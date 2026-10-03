@@ -10,9 +10,11 @@ import {
   TextInput,
   Alert,
   Linking,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { conflictApi, ConflictReport } from '../services/conflictApi';
+import { authService } from '../services/authService';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -554,53 +556,119 @@ export const ConflictReportDetailsScreen: React.FC<ConflictReportDetailsProps> =
           </SectionCard>
         </View>
 
+        {/* ── Photo Evidence Card if available ─────────────────────── */}
+        {report.photoUrl ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>📷 PHOTOGRAPHIC EVIDENCE</Text>
+            <SectionCard>
+              <View style={styles.photoContainer}>
+                <Image
+                  source={{ uri: report.photoUrl }}
+                  style={styles.evidenceImage}
+                  resizeMode="cover"
+                />
+              </View>
+            </SectionCard>
+          </View>
+        ) : null}
+
+        {/* ── Lifecycle Timeline ───────────────────────────────────── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>🔄 REPORT LIFECYCLE TIMELINE</Text>
+          <SectionCard>
+            <View style={styles.timelineContainer}>
+              {[
+                { key: 'Submitted', label: 'SUBMITTED', time: report.reportedAt, active: true },
+                { key: 'Pending Verification', label: 'PENDING REVIEW', time: report.reportedAt, active: true },
+                { key: 'Verified', label: 'VERIFIED', time: report.verifiedAt, active: ['Verified', 'Dispatched', 'In Progress', 'Resolved'].includes(report.status) },
+                { key: 'Ranger Assigned', label: 'RANGER ASSIGNED', time: report.dispatchedAt, active: ['Dispatched', 'In Progress', 'Resolved'].includes(report.status) },
+                { key: 'Dispatched', label: 'DISPATCHED', time: report.dispatchedAt, active: ['Dispatched', 'In Progress', 'Resolved'].includes(report.status) },
+                { key: 'In Progress', label: 'IN PROGRESS', time: report.inProgressAt, active: ['In Progress', 'Resolved'].includes(report.status) },
+                { key: 'Resolved', label: 'RESOLVED', time: report.resolvedAt, active: report.status === 'Resolved' },
+              ].map((step, idx, arr) => (
+                <View key={step.key} style={styles.timelineRow}>
+                  <View style={styles.timelineColLeft}>
+                    <View style={[styles.timelineNode, step.active ? styles.nodeActive : styles.nodeInactive]}>
+                      {step.active ? <Text style={styles.nodeCheck}>✓</Text> : null}
+                    </View>
+                    {idx < arr.length - 1 && (
+                      <View style={[styles.timelineLine, step.active && arr[idx + 1].active ? styles.lineActive : styles.lineInactive]} />
+                    )}
+                  </View>
+                  <View style={styles.timelineColRight}>
+                    <Text style={[styles.timelineStepLabel, step.active ? styles.stepActiveText : styles.stepInactiveText]}>
+                      {step.label}
+                    </Text>
+                    {step.active && step.time ? (
+                      <Text style={styles.timelineTimestamp}>{formatDate(step.time)}</Text>
+                    ) : (
+                      <Text style={styles.timelinePendingText}>Awaiting action</Text>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
+          </SectionCard>
+        </View>
+
         {/* ── Tactical Field Topography (Map) ─────────────────────── */}
         <MapBlock report={report} />
 
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* ── Bottom Action Buttons ─────────────────────────────────── */}
+      {/* ── Bottom Action Buttons (Role Restricted) ───────────────── */}
       <View style={styles.bottomActions}>
-        {isPending && (
-          <>
-            <TouchableOpacity
-              style={[styles.actionBtn, styles.rejectBtn]}
-              onPress={() => setShowRejectModal(true)}
-            >
-              <Text style={styles.rejectBtnText}>✕  REJECT</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionBtn, styles.verifyBtn]}
-              onPress={() => navigation.navigate('VerifyConfirm', { reportId: report.reportId, report })}
-            >
-              <Text style={styles.verifyBtnText}>✓  VERIFY REPORT</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-        {isVerified && (
+        {(authService.userRole === 'Community Member' || authService.userRole === 'COMMUNITY_MEMBER') ? (
           <TouchableOpacity
             style={[styles.actionBtn, styles.verifyBtn, { flex: 1 }]}
-            onPress={() => navigation.navigate('AvailableRangerSelection', { reportId: report.reportId })}
-          >
-            <Text style={styles.verifyBtnText}>🧭  FIND AVAILABLE RANGER</Text>
-          </TouchableOpacity>
-        )}
-
-        {isRejected && (
-          <View style={[styles.actionBtn, styles.rejectedBanner, { flex: 1 }]}>
-            <Text style={styles.rejectedBannerText}>🚫  This report has been rejected</Text>
-          </View>
-        )}
-
-        {!isPending && !isVerified && !isRejected && (
-          <TouchableOpacity
-            style={[styles.actionBtn, { flex: 1, backgroundColor: '#374151' }]}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.verifyBtnText}>← BACK TO REPORTS</Text>
+            <Text style={styles.verifyBtnText}>← BACK TO MY REPORTS</Text>
           </TouchableOpacity>
+        ) : (
+          <>
+            {isPending && (
+              <>
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.rejectBtn]}
+                  onPress={() => setShowRejectModal(true)}
+                >
+                  <Text style={styles.rejectBtnText}>✕  REJECT</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.verifyBtn]}
+                  onPress={() => navigation.navigate('VerifyConfirm', { reportId: report.reportId, report })}
+                >
+                  <Text style={styles.verifyBtnText}>✓  VERIFY REPORT</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {isVerified && (
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.verifyBtn, { flex: 1 }]}
+                onPress={() => navigation.navigate('AvailableRangerSelection', { reportId: report.reportId })}
+              >
+                <Text style={styles.verifyBtnText}>🧭  FIND AVAILABLE RANGER</Text>
+              </TouchableOpacity>
+            )}
+
+            {isRejected && (
+              <View style={[styles.actionBtn, styles.rejectedBanner, { flex: 1 }]}>
+                <Text style={styles.rejectedBannerText}>🚫  This report has been rejected</Text>
+              </View>
+            )}
+
+            {!isPending && !isVerified && !isRejected && (
+              <TouchableOpacity
+                style={[styles.actionBtn, { flex: 1, backgroundColor: '#374151' }]}
+                onPress={() => navigation.goBack()}
+              >
+                <Text style={styles.verifyBtnText}>← BACK TO REPORTS</Text>
+              </TouchableOpacity>
+            )}
+          </>
         )}
       </View>
 
@@ -997,6 +1065,86 @@ const styles = StyleSheet.create({
     minHeight: 90, marginBottom: 12,
   },
   reasonInputError: { borderColor: '#EF4444' },
+
+  // Photo evidence
+  photoContainer: {
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  evidenceImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 10,
+  },
+
+  // Lifecycle Timeline
+  timelineContainer: {
+    paddingVertical: 6,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  timelineColLeft: {
+    width: 24,
+    alignItems: 'center',
+  },
+  timelineNode: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nodeActive: {
+    backgroundColor: '#10B981',
+  },
+  nodeInactive: {
+    backgroundColor: '#E5E7EB',
+  },
+  nodeCheck: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  timelineLine: {
+    width: 2,
+    height: 24,
+    marginTop: 2,
+  },
+  lineActive: {
+    backgroundColor: '#10B981',
+  },
+  lineInactive: {
+    backgroundColor: '#E5E7EB',
+  },
+  timelineColRight: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  timelineStepLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  stepActiveText: {
+    color: '#111827',
+  },
+  stepInactiveText: {
+    color: '#9CA3AF',
+  },
+  timelineTimestamp: {
+    fontSize: 11,
+    color: '#065F46',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  timelinePendingText: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+    marginTop: 2,
+  },
 });
 
 export default ConflictReportDetailsScreen;
