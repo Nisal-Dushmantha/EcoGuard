@@ -1,13 +1,16 @@
 import { BrandMark } from "./BrandMark";
 import { Icon } from "./Icon";
 import { useAuth } from "../../context/AuthContext";
-export type WorkspaceView = "dashboard" | "generate" | "monitoring";
+
+export type WorkspaceView = "monitoring" | "dashboard" | "generate";
+
 interface NavbarProps {
   activeTab: WorkspaceView;
   onSelectTab: (tab: WorkspaceView) => void;
   collapsed: boolean;
   onToggle: () => void;
 }
+
 export function Navbar({
   activeTab,
   onSelectTab,
@@ -15,6 +18,7 @@ export function Navbar({
   onToggle,
 }: NavbarProps) {
   const { user, logout } = useAuth();
+
   return (
     <aside className={`workspace-nav ${collapsed ? "is-collapsed" : ""}`}>
       <div className="nav-brand">
@@ -25,26 +29,29 @@ export function Navbar({
           <div className="brand-name">
             EcoGuard<span>®</span>
           </div>
-          <div className="brand-sub">CONSERVATION WORKSPACE</div>
+          <div className="brand-sub">PARK OPERATIONS WORKSPACE</div>
         </div>
       </div>
+
       <button
         className="workspace-switch nav-copy"
-        onClick={() => onSelectTab("dashboard")}
+        onClick={() => onSelectTab("monitoring")}
       >
         <span className="workspace-monogram">EG</span>
         <span>
-          Wildlife operations<small>Sri Lanka</small>
+          Wildlife operations<small>{user?.assignedPark || "Sri Lanka"}</small>
         </span>
         <Icon name="chevron" size={15} />
       </button>
-      <div className="nav-section-label nav-copy">WORKSPACE</div>
+
+      <div className="nav-section-label nav-copy">OPERATIONS MODULES</div>
+
       <nav aria-label="Main navigation">
         {(
           [
-            { id: "dashboard", label: "Overview", icon: "grid" },
-            { id: "generate", label: "Report studio", icon: "report" },
-            { id: "monitoring", label: "Wildlife monitoring", icon: "radar" },
+            { id: "monitoring", label: "Wildlife Monitoring", icon: "radar" },
+            { id: "dashboard", label: "Conservation Overview", icon: "grid" },
+            { id: "generate", label: "Report Studio", icon: "report" },
           ] as const
         ).map((item) => (
           <button
@@ -62,27 +69,31 @@ export function Navbar({
           </button>
         ))}
       </nav>
+
       <div className="nav-field-note nav-copy">
         <Icon name="leaf" size={25} />
         <p>
-          Small insights.
+          Observe. Protect.
           <br />
-          <strong>Lasting impact.</strong>
+          <strong>Safeguard Wildlife.</strong>
         </p>
-        <span>Every observation brings us closer to a protected future.</span>
+        <span>Real-time GPS collar telemetry & geofence threat mitigation.</span>
       </div>
+
       <div className="nav-bottom">
         <div className="nav-person">
           <span className="avatar">
             {user?.name
-              .split(" ")
-              .map((n) => n[0])
-              .slice(0, 2)
-              .join("")}
+              ? user.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .slice(0, 2)
+                  .join("")
+              : "PM"}
           </span>
           <div className="nav-copy">
-            <strong>{user?.name}</strong>
-            <small>{user?.role}</small>
+            <strong>{user?.name || "Park Manager"}</strong>
+            <small>{user?.role || "Park Manager"}</small>
           </div>
           <button
             className="icon-button"
@@ -93,6 +104,7 @@ export function Navbar({
             <Icon name="logout" size={18} />
           </button>
         </div>
+
         <button
           className="collapse-nav"
           onClick={onToggle}
