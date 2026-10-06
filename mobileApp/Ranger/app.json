@@ -11,6 +11,9 @@
     },
     "android": {
       "package": "com.ecoguard.ranger"
+    },
+    "web": {
+      "bundler": "metro"
     }
   }
 }
