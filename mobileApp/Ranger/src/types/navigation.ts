@@ -3,6 +3,7 @@ import { LocalIncidentRecord } from './incident';
 export type RangerStackParamList = {
   RangerLogin: undefined;
   RangerMainTabs: undefined;
+  RangerDashboard: undefined;
   LogIncident: undefined;
   IncidentSuccess: {
     incident: LocalIncidentRecord;

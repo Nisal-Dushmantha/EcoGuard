@@ -26,12 +26,21 @@ export const RangerDashboardScreen: React.FC<RangerDashboardScreenProps> = ({ na
   const { pendingCount, isSyncing, triggerSync, refreshCounts } = useIncidentSync();
   const [totalIncidentsCount, setTotalIncidentsCount] = useState<number>(0);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   const loadDashboardData = useCallback(async () => {
     try {
       const all = await IncidentStorageService.getAllLocalIncidents();
       setTotalIncidentsCount(all.length);
       await refreshCounts();
+      try {
+        const meRes = await authService.getMe();
+        if (meRes && meRes.user) {
+          setUserProfile(meRes.user);
+        }
+      } catch {
+        // Handled
+      }
     } catch {
       // Handled
     }
@@ -63,6 +72,20 @@ export const RangerDashboardScreen: React.FC<RangerDashboardScreenProps> = ({ na
     navigation.replace('Login');
   };
 
+  const initials = userProfile?.name
+    ? userProfile.name
+        .split(' ')
+        .filter(Boolean)
+        .map((n: string) => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase()
+    : authService.userName
+    ? authService.userName.substring(0, 2).toUpperCase()
+    : 'RN';
+
+  const rangerId = userProfile?.officerId || userProfile?.id || userProfile?._id || 'RN-402';
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppHeader
@@ -84,18 +107,31 @@ export const RangerDashboardScreen: React.FC<RangerDashboardScreenProps> = ({ na
         }
       >
         {/* Ranger Profile Status Strip */}
-        <View style={styles.rangerStrip}>
-          <TouchableOpacity style={styles.rangerAvatar} onPress={handleLogout}>
-            <Text style={styles.avatarText}>RN</Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.rangerStrip}
+          onPress={() => navigation.navigate('OfficerProfile')}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="View Officer Profile"
+          activeOpacity={0.8}
+        >
+          <View style={styles.rangerAvatar}>
+            <Text style={styles.avatarText}>{initials}</Text>
+          </View>
           <View style={styles.rangerInfo}>
-            <Text style={styles.rangerName}>Ranger K. Bandara</Text>
-            <Text style={styles.rangerMeta}>Yala National Park • Sector 4</Text>
+            <Text style={styles.rangerName}>
+              {userProfile?.name || authService.userName || 'Ranger Officer'}
+            </Text>
+            <Text style={styles.rangerMeta}>
+              {userProfile?.assignedPark || 'Yala National Park'} • {userProfile?.role || 'Ranger'}
+            </Text>
           </View>
           <View style={styles.badgeNumber}>
-            <Text style={styles.badgeNumberText}>RN-402</Text>
+            <Text style={styles.badgeNumberText}>
+              {rangerId.length > 10 ? rangerId.substring(0, 10) : rangerId}
+            </Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* PRIMARY ACTION CARD: LOG INCIDENT (Dominant Call to Action) */}
         <TouchableOpacity

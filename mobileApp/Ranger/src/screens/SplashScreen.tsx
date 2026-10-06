@@ -64,13 +64,53 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ navigation }) => {
       ])
     ).start();
 
-    // Initialization delay
-    const timer = setTimeout(() => {
-      setIsInitializing(false);
-    }, 2000);
+    let isMounted = true;
 
-    return () => clearTimeout(timer);
-  }, [fadeAnim, scaleAnim, pulseAnim]);
+    // Automatic session restore check
+    const checkAuthAndRedirect = async () => {
+      try {
+        const hasAuth = await authService.loadStoredAuth();
+        if (isMounted) {
+          if (hasAuth && authService.userRole) {
+            const normalizedRole = authService.userRole
+              ?.trim()
+              .toUpperCase()
+              .replace(/\s+/g, '_');
+
+            switch (normalizedRole) {
+              case 'COMMUNITY_MEMBER':
+                navigation.replace('CommunityMemberDashboard');
+                return;
+              case 'COMMUNITY_LIAISON_OFFICER':
+                navigation.replace('ConflictOperationsHome');
+                return;
+              case 'RANGER':
+                navigation.replace('RangerDashboard');
+                return;
+              case 'PARK_MANAGER':
+              default:
+                await authService.logout();
+                break;
+            }
+          }
+          setIsInitializing(false);
+        }
+      } catch {
+        if (isMounted) {
+          setIsInitializing(false);
+        }
+      }
+    };
+
+    const timer = setTimeout(() => {
+      checkAuthAndRedirect();
+    }, 1200);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [fadeAnim, scaleAnim, pulseAnim, navigation]);
 
   const handleGetStarted = async () => {
     setIsInitializing(true);
@@ -82,14 +122,14 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ navigation }) => {
         .replace(/\s+/g, '_');
 
       switch (normalizedRole) {
-        case 'COMMUNITY_LIAISON_OFFICER':
-          navigation.replace('ConflictOperationsHome');
-          break;
         case 'COMMUNITY_MEMBER':
           navigation.replace('CommunityMemberDashboard');
           break;
+        case 'COMMUNITY_LIAISON_OFFICER':
+          navigation.replace('ConflictOperationsHome');
+          break;
         case 'RANGER':
-          navigation.replace('RangerMainTabs');
+          navigation.replace('RangerDashboard');
           break;
         case 'PARK_MANAGER':
         default:

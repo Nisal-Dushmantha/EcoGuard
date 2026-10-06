@@ -46,7 +46,7 @@ export const RangerLoginScreen: React.FC<RangerLoginScreenProps> = ({
       if (onLoginSuccess) {
         onLoginSuccess(user);
       }
-      navigation.replace('RangerMainTabs');
+      navigation.replace('RangerDashboard');
     } catch (err: any) {
       setServerError(err.message || 'Login failed. Please verify credentials.');
     } finally {

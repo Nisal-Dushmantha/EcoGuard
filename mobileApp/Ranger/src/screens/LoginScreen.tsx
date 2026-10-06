@@ -70,16 +70,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         .replace(/\s+/g, '_');
 
       switch (normalizedRole) {
-        case 'COMMUNITY_LIAISON_OFFICER':
-          navigation.replace('ConflictOperationsHome');
-          break;
-
         case 'COMMUNITY_MEMBER':
           navigation.replace('CommunityMemberDashboard');
           break;
 
+        case 'COMMUNITY_LIAISON_OFFICER':
+          navigation.replace('ConflictOperationsHome');
+          break;
+
         case 'RANGER':
-          navigation.replace('RangerMainTabs');
+          navigation.replace('RangerDashboard');
           break;
 
         case 'PARK_MANAGER':
@@ -95,7 +95,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           await authService.logout();
           Alert.alert(
             'Unsupported Role',
-            'This account role is not supported on the mobile application.'
+            'This role is not supported on the mobile application.'
           );
           setError(`Access Denied: The role '${rawRole}' is not supported on the mobile app.`);
           break;

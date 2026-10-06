@@ -163,7 +163,7 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
     return (
       <SafeAreaView style={styles.centerBox}>
         <ActivityIndicator size="large" color="#1B4332" />
-        <Text style={styles.loadingText}>Loading profile...</Text>
+        <Text style={styles.loadingText}>Loading Ranger profile…</Text>
       </SafeAreaView>
     );
   }
@@ -183,7 +183,7 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
   const displayRole =
     profile.role === 'COMMUNITY_LIAISON_OFFICER' || profile.role === 'Community Liaison Officer'
       ? 'Community Liaison Officer'
-      : profile.role || 'Field Officer';
+      : profile.role || 'Ranger';
 
   // Format officer initials
   const initials = profile.name
@@ -194,7 +194,7 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
         .join('')
         .substring(0, 2)
         .toUpperCase()
-    : 'CO';
+    : 'RN';
 
   const officerIdDisplay = profile.officerId || profile.id || profile._id || 'Not assigned';
 
@@ -208,7 +208,7 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
           <Text style={styles.backBtnText}>←</Text>
         </TouchableOpacity>
         <View style={styles.headerTitleBox}>
-          <Text style={styles.headerTitle}>Officer Profile</Text>
+          <Text style={styles.headerTitle}>Ranger Profile</Text>
           <Text style={styles.headerSubtitle}>FIELD OPERATIONS CONSOLE</Text>
         </View>
         <TouchableOpacity style={styles.settingsBtn} onPress={() => setShowEditModal(true)}>

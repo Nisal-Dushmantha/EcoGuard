@@ -32,7 +32,7 @@ import { authService } from '../services/authService';
 // Navigation state container supporting standalone and React Navigation environments
 export const RangerNavigator: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<string>('Splash'); // Default to splash
-  const [activeTab, setActiveTab] = useState<'Home' | 'Incidents' | 'Alerts'>('Home');
+  const [activeTab, setActiveTab] = useState<'Home' | 'Incidents' | 'Alerts' | 'Profile'>('Home');
   const [screenParams, setScreenParams] = useState<any>({});
   const [screenHistory, setScreenHistory] = useState<string[]>(['Splash']);
 
@@ -52,6 +52,10 @@ export const RangerNavigator: React.FC = () => {
       } else if (screen === 'AlertsTab') {
         setActiveTab('Alerts');
         setCurrentScreen('Alerts');
+      } else if (screen === 'ProfileTab' || screen === 'OfficerProfile') {
+        setActiveTab('Profile');
+        setScreenHistory((prev) => [...prev, 'OfficerProfile']);
+        setCurrentScreen('OfficerProfile');
       } else {
         setScreenHistory((prev) => [...prev, screen]);
         setCurrentScreen(screen);
@@ -59,10 +63,20 @@ export const RangerNavigator: React.FC = () => {
     },
     replace: (screen: string, params?: any) => {
       if (params) setScreenParams(params);
-      if (screen === 'RangerMainTabs' || screen === 'RangerHome' || screen === 'ConflictOperationsHome' || screen === 'CommunityMemberDashboard') {
+      if (
+        screen === 'RangerMainTabs' ||
+        screen === 'RangerHome' ||
+        screen === 'RangerDashboard' ||
+        screen === 'ConflictOperationsHome' ||
+        screen === 'CommunityMemberDashboard'
+      ) {
         setActiveTab('Home');
-        setCurrentScreen(screen);
-        setScreenHistory([screen]);
+        const targetScreen =
+          screen === 'RangerMainTabs' || screen === 'RangerHome'
+            ? 'RangerDashboard'
+            : screen;
+        setCurrentScreen(targetScreen);
+        setScreenHistory([targetScreen]);
       } else {
         setCurrentScreen(screen);
       }
@@ -93,7 +107,14 @@ export const RangerNavigator: React.FC = () => {
   };
 
   // Determine whether bottom tabs should be visible on the current screen
-  const isTabScreen = ['RangerDashboard', 'MyIncidents', 'Alerts'].includes(currentScreen);
+  const isTabScreen = [
+    'RangerDashboard',
+    'RangerHome',
+    'RangerMainTabs',
+    'MyIncidents',
+    'Alerts',
+    'OfficerProfile',
+  ].includes(currentScreen);
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -195,6 +216,7 @@ export const RangerNavigator: React.FC = () => {
         return <AlertsScreen navigation={navigation} />;
       case 'RangerHome':
       case 'RangerDashboard':
+      case 'RangerMainTabs':
         return <RangerDashboardScreen navigation={navigation} />;
       default:
         return <SplashScreen navigation={navigation} />;
@@ -269,6 +291,24 @@ export const RangerNavigator: React.FC = () => {
             <Text style={[styles.tabIcon, activeTab === 'Alerts' && styles.tabIconActive]}>🔔</Text>
             <Text style={[styles.tabLabel, activeTab === 'Alerts' && styles.tabLabelActive]}>
               Alerts
+            </Text>
+          </TouchableOpacity>
+
+          {/* Profile Tab */}
+          <TouchableOpacity
+            style={styles.tabItem}
+            onPress={() => {
+              setActiveTab('Profile');
+              setCurrentScreen('OfficerProfile');
+            }}
+            accessible={true}
+            accessibilityRole="tab"
+            accessibilityLabel="Profile tab"
+            accessibilityState={{ selected: activeTab === 'Profile' }}
+          >
+            <Text style={[styles.tabIcon, activeTab === 'Profile' && styles.tabIconActive]}>👤</Text>
+            <Text style={[styles.tabLabel, activeTab === 'Profile' && styles.tabLabelActive]}>
+              Profile
             </Text>
           </TouchableOpacity>
         </View>
