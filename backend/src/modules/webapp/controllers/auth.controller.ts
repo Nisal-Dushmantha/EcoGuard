@@ -19,32 +19,7 @@ interface LocalUser {
   assignedPark: string;
 }
 
-const mockUsers: LocalUser[] = [
-  {
-    id: 'demo-pm-01',
-    name: 'Nisal Dushmantha',
-    email: 'manager@ecoguard.lk',
-    passwordHash: bcrypt.hashSync('password123', 10),
-    role: 'Park Manager',
-    assignedPark: 'Yala National Park',
-  },
-  {
-    id: 'demo-cr-02',
-    name: 'Dr. Senanayake',
-    email: 'researcher@ecoguard.lk',
-    passwordHash: bcrypt.hashSync('password123', 10),
-    role: 'Conservation Researcher',
-    assignedPark: 'Wilpattu National Park',
-  },
-  {
-    id: 'demo-adm-03',
-    name: 'Central Admin',
-    email: 'admin@ecoguard.lk',
-    passwordHash: bcrypt.hashSync('password123', 10),
-    role: 'Admin',
-    assignedPark: 'All Parks',
-  },
-];
+const mockUsers: LocalUser[] = [];
 
 const generateToken = (payload: AuthUserPayload): string => {
   return jwt.sign(payload, getJwtSecret(), { expiresIn: '7d' });
@@ -69,7 +44,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const validRole: UserRole = ['Park Manager', 'Conservation Researcher', 'Ranger', 'Admin'].includes(role)
+    const validRole: UserRole = ['Park Manager', 'Conservation Researcher', 'Ranger', 'Admin', 'Community Liaison Officer', 'Community Member'].includes(role)
       ? role
       : 'Park Manager';
 
@@ -191,7 +166,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       }
     }
 
-    // 2. Check local fallback mock users (handles demo accounts or offline development)
+    // 2. Check local fallback mock users (handles offline development when DB is disconnected)
     const localUser = mockUsers.find((u) => u.email === normalizedEmail);
     if (localUser) {
       const isMatch = await bcrypt.compare(password, localUser.passwordHash);
@@ -227,7 +202,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
 /**
  * @route   GET /api/webapp/auth/me
- * @desc    Get currently logged in user details
+ * @desc    Get currently logged in user details from MongoDB
  */
 export const getMe = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   if (!req.user) {
@@ -235,7 +210,142 @@ export const getMe = async (req: AuthenticatedRequest, res: Response): Promise<v
     return;
   }
 
-  res.status(200).json({
-    user: req.user,
-  });
+  try {
+    if (mongoose.connection.readyState === 1 && req.user.id && !req.user.id.startsWith('local-')) {
+      const dbUser = await User.findById(req.user.id).select('-password');
+      if (dbUser) {
+        res.status(200).json({
+          user: {
+            id: dbUser._id.toString(),
+            name: dbUser.name,
+            email: dbUser.email,
+            role: dbUser.role,
+            assignedPark: dbUser.assignedPark,
+            phoneNumber: dbUser.phoneNumber || '',
+            dutyStatus: dbUser.dutyStatus !== undefined ? dbUser.dutyStatus : true,
+            callSign: dbUser.callSign || '',
+            officerId: dbUser.officerId || dbUser._id.toString().substring(0, 10).toUpperCase(),
+            createdAt: dbUser.createdAt,
+            updatedAt: dbUser.updatedAt,
+          },
+        });
+        return;
+      }
+    }
+
+    res.status(200).json({
+      user: req.user,
+    });
+  } catch (error: any) {
+    console.error('getMe error:', error);
+    res.status(500).json({ error: 'Server error fetching user profile.' });
+  }
+};
+
+/**
+ * @route   PATCH /api/webapp/auth/me
+ * @desc    Update user-editable profile details
+ */
+export const updateProfile = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  if (!req.user) {
+    res.status(401).json({ error: 'Not authenticated.' });
+    return;
+  }
+
+  try {
+    const { name, phoneNumber, dutyStatus, callSign } = req.body;
+    const updates: Record<string, any> = {};
+
+    if (name !== undefined) updates.name = name.trim();
+    if (phoneNumber !== undefined) updates.phoneNumber = phoneNumber.trim();
+    if (dutyStatus !== undefined) updates.dutyStatus = Boolean(dutyStatus);
+    if (callSign !== undefined) updates.callSign = callSign.trim();
+
+    if (mongoose.connection.readyState === 1 && req.user.id && !req.user.id.startsWith('local-')) {
+      const updatedUser = await User.findByIdAndUpdate(req.user.id, updates, { new: true }).select('-password');
+      if (!updatedUser) {
+        res.status(404).json({ error: 'User account not found.' });
+        return;
+      }
+
+      res.status(200).json({
+        message: 'Profile updated successfully',
+        user: {
+          id: updatedUser._id.toString(),
+          name: updatedUser.name,
+          email: updatedUser.email,
+          role: updatedUser.role,
+          assignedPark: updatedUser.assignedPark,
+          phoneNumber: updatedUser.phoneNumber || '',
+          dutyStatus: updatedUser.dutyStatus !== undefined ? updatedUser.dutyStatus : true,
+          callSign: updatedUser.callSign || '',
+          officerId: updatedUser.officerId || updatedUser._id.toString().substring(0, 10).toUpperCase(),
+          createdAt: updatedUser.createdAt,
+          updatedAt: updatedUser.updatedAt,
+        },
+      });
+      return;
+    }
+
+    res.status(200).json({
+      message: 'Profile updated',
+      user: {
+        ...req.user,
+        ...updates,
+      },
+    });
+  } catch (error: any) {
+    console.error('updateProfile error:', error);
+    res.status(500).json({ error: error?.message || 'Failed to update profile.' });
+  }
+};
+
+/**
+ * @route   POST /api/webapp/auth/change-password
+ * @desc    Change password for currently authenticated user
+ */
+export const changePassword = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  if (!req.user) {
+    res.status(401).json({ error: 'Not authenticated.' });
+    return;
+  }
+
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ error: 'Current password and new password are required.' });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      res.status(400).json({ error: 'New password must be at least 6 characters long.' });
+      return;
+    }
+
+    if (mongoose.connection.readyState === 1 && req.user.id && !req.user.id.startsWith('local-')) {
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        res.status(404).json({ error: 'User account not found.' });
+        return;
+      }
+
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) {
+        res.status(400).json({ error: 'Incorrect current password.' });
+        return;
+      }
+
+      user.password = newPassword;
+      await user.save();
+
+      res.status(200).json({ message: 'Password changed successfully.' });
+      return;
+    }
+
+    res.status(200).json({ message: 'Password changed successfully.' });
+  } catch (error: any) {
+    console.error('changePassword error:', error);
+    res.status(500).json({ error: error?.message || 'Failed to change password.' });
+  }
 };

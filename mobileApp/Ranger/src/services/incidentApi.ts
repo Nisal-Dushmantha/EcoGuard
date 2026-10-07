@@ -1,8 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { LocalIncidentRecord, RangerUser } from '../types/incident';
-
-// Set PC LAN IP (192.168.1.10) so physical iPhone connects to backend over Wi-Fi
-const DEFAULT_API_BASE = 'http://192.168.1.10:5000';
+import { API_BASE_URL } from '../config/apiConfig';
 
 class IncidentApiService {
   private client: AxiosInstance;
@@ -10,7 +8,7 @@ class IncidentApiService {
 
   constructor() {
     this.client = axios.create({
-      baseURL: DEFAULT_API_BASE,
+      baseURL: API_BASE_URL,
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',

@@ -1,5 +1,6 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 import dotenv from 'dotenv';
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
@@ -26,8 +27,16 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '1mb' }));   // modest limit – images use multipart, not JSON
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// Serve uploaded evidence images as static files
+// e.g. GET http://<host>/uploads/evidence/evidence-123456.jpg
+const __filename2 = fileURLToPath(import.meta.url);
+const __dirname2 = path.dirname(__filename2);
+const uploadsDir = path.resolve(__dirname2, '../uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+app.use('/uploads', express.static(uploadsDir));
 
 // --- API Modules ---
 // 1. Common / Health Check

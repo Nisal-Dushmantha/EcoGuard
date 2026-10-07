@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ViewStyle,
   TextStyle,
+  StyleProp,
 } from 'react-native';
 import { THEME } from '../constants/theme';
 
@@ -15,8 +16,8 @@ interface PrimaryButtonProps {
   disabled?: boolean;
   loading?: boolean;
   icon?: string;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
   variant?: 'primary' | 'danger' | 'accent';
 }
 

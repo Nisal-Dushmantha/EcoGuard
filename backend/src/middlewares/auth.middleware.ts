@@ -38,6 +38,26 @@ export const authenticateToken = (
   }
 };
 
+export const optionalAuthenticateToken = (
+  req: AuthenticatedRequest,
+  _res: Response,
+  next: NextFunction
+): void => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+  if (token) {
+    const secret = process.env.JWT_SECRET || 'ecoguard_jwt_secret_key_2026_university_project';
+    try {
+      const decoded = jwt.verify(token, secret) as AuthUserPayload;
+      req.user = decoded;
+    } catch {
+      // ignore invalid token for optional auth
+    }
+  }
+  next();
+};
+
 export const requireRole = (allowedRoles: UserRole[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {

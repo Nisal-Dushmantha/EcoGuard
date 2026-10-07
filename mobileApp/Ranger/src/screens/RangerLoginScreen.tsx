@@ -7,8 +7,8 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
-} from 'react-native';
+  } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { THEME } from '../constants/theme';
 import { InputField } from '../components/InputField';
 import { PrimaryButton } from '../components/PrimaryButton';
@@ -46,7 +46,7 @@ export const RangerLoginScreen: React.FC<RangerLoginScreenProps> = ({
       if (onLoginSuccess) {
         onLoginSuccess(user);
       }
-      navigation.replace('RangerMainTabs');
+      navigation.replace('RangerDashboard');
     } catch (err: any) {
       setServerError(err.message || 'Login failed. Please verify credentials.');
     } finally {

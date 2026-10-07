@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { THEME } from '../constants/theme';
-import { RangerLoginScreen } from '../screens/RangerLoginScreen';
+import { LoginScreen } from '../screens/LoginScreen';
+import { RegisterScreen } from '../screens/RegisterScreen';
+import { SplashScreen } from '../screens/SplashScreen';
 import { RangerDashboardScreen } from '../screens/RangerDashboardScreen';
 import { LogIncidentScreen } from '../screens/LogIncidentScreen';
 import { IncidentSuccessScreen } from '../screens/IncidentSuccessScreen';
@@ -9,15 +12,29 @@ import { MyIncidentsScreen } from '../screens/MyIncidentsScreen';
 import { IncidentDetailsScreen } from '../screens/IncidentDetailsScreen';
 import { SyncStatusScreen } from '../screens/SyncStatusScreen';
 import { AlertsScreen } from '../screens/AlertsScreen';
+import { ConflictOperationsHome } from '../screens/ConflictOperationsHome';
+import { PendingReportsScreen } from '../screens/PendingReportsScreen';
+import { ConflictReportDetailsScreen } from '../screens/ConflictReportDetailsScreen';
+import { VerifyConfirmScreen } from '../screens/VerifyConfirmScreen';
+import { AvailableRangerSelection } from '../screens/AvailableRangerSelection'; // force reparse
+import { ConfirmAssignmentScreen } from '../screens/ConfirmAssignmentScreen';
+import { DispatchSuccessScreen } from '../screens/DispatchSuccessScreen';
+import { ConflictActivityScreen } from '../screens/ConflictActivityScreen';
+import { OfficerProfileScreen } from '../screens/OfficerProfileScreen';
+import { ActiveIncidentTrackingScreen } from '../screens/ActiveIncidentTrackingScreen';
+import { CommunityMemberDashboard } from '../screens/CommunityMemberDashboard';
+import { ReportWildlifeConflictScreen } from '../screens/ReportWildlifeConflictScreen';
+import { ReportSubmittedSuccessScreen } from '../screens/ReportSubmittedSuccessScreen';
+import { CommunityMemberReportsScreen } from '../screens/CommunityMemberReportsScreen';
 import { LocalIncidentRecord } from '../types/incident';
+import { authService } from '../services/authService';
 
 // Navigation state container supporting standalone and React Navigation environments
 export const RangerNavigator: React.FC = () => {
-  // Current screen state
-  const [currentScreen, setCurrentScreen] = useState<string>('RangerDashboard'); // Default to dashboard or login
-  const [activeTab, setActiveTab] = useState<'Home' | 'Incidents' | 'Alerts'>('Home');
+  const [currentScreen, setCurrentScreen] = useState<string>('Splash'); // Default to splash
+  const [activeTab, setActiveTab] = useState<'Home' | 'Incidents' | 'Alerts' | 'Profile'>('Home');
   const [screenParams, setScreenParams] = useState<any>({});
-  const [screenHistory, setScreenHistory] = useState<string[]>(['RangerDashboard']);
+  const [screenHistory, setScreenHistory] = useState<string[]>(['Splash']);
 
   // Navigation controller passed to screens
   const navigation = {
@@ -25,13 +42,20 @@ export const RangerNavigator: React.FC = () => {
       if (params) setScreenParams(params);
       if (screen === 'HomeTab') {
         setActiveTab('Home');
-        setCurrentScreen('RangerDashboard');
+        const r = authService.userRole?.trim().toUpperCase().replace(/\s+/g, '_');
+        if (r === 'COMMUNITY_MEMBER') setCurrentScreen('CommunityMemberDashboard');
+        else if (r === 'COMMUNITY_LIAISON_OFFICER') setCurrentScreen('ConflictOperationsHome');
+        else setCurrentScreen('RangerDashboard');
       } else if (screen === 'IncidentsTab') {
         setActiveTab('Incidents');
         setCurrentScreen('MyIncidents');
       } else if (screen === 'AlertsTab') {
         setActiveTab('Alerts');
         setCurrentScreen('Alerts');
+      } else if (screen === 'ProfileTab' || screen === 'OfficerProfile') {
+        setActiveTab('Profile');
+        setScreenHistory((prev) => [...prev, 'OfficerProfile']);
+        setCurrentScreen('OfficerProfile');
       } else {
         setScreenHistory((prev) => [...prev, screen]);
         setCurrentScreen(screen);
@@ -39,10 +63,20 @@ export const RangerNavigator: React.FC = () => {
     },
     replace: (screen: string, params?: any) => {
       if (params) setScreenParams(params);
-      if (screen === 'RangerMainTabs') {
+      if (
+        screen === 'RangerMainTabs' ||
+        screen === 'RangerHome' ||
+        screen === 'RangerDashboard' ||
+        screen === 'ConflictOperationsHome' ||
+        screen === 'CommunityMemberDashboard'
+      ) {
         setActiveTab('Home');
-        setCurrentScreen('RangerDashboard');
-        setScreenHistory(['RangerDashboard']);
+        const targetScreen =
+          screen === 'RangerMainTabs' || screen === 'RangerHome'
+            ? 'RangerDashboard'
+            : screen;
+        setCurrentScreen(targetScreen);
+        setScreenHistory([targetScreen]);
       } else {
         setCurrentScreen(screen);
       }
@@ -55,7 +89,14 @@ export const RangerNavigator: React.FC = () => {
         setScreenHistory(newHistory);
         setCurrentScreen(prev);
       } else {
-        setCurrentScreen('RangerDashboard');
+        const r = authService.userRole?.trim().toUpperCase().replace(/\s+/g, '_');
+        if (r === 'COMMUNITY_MEMBER') {
+          setCurrentScreen('CommunityMemberDashboard');
+        } else if (r === 'COMMUNITY_LIAISON_OFFICER') {
+          setCurrentScreen('ConflictOperationsHome');
+        } else {
+          setCurrentScreen('RangerDashboard');
+        }
         setActiveTab('Home');
       }
     },
@@ -66,12 +107,41 @@ export const RangerNavigator: React.FC = () => {
   };
 
   // Determine whether bottom tabs should be visible on the current screen
-  const isTabScreen = ['RangerDashboard', 'MyIncidents', 'Alerts'].includes(currentScreen);
+  const isTabScreen = [
+    'RangerDashboard',
+    'RangerHome',
+    'RangerMainTabs',
+    'MyIncidents',
+    'Alerts',
+    'OfficerProfile',
+  ].includes(currentScreen);
 
   const renderScreen = () => {
     switch (currentScreen) {
-      case 'RangerLogin':
-        return <RangerLoginScreen navigation={navigation} />;
+      case 'Splash':
+        return <SplashScreen navigation={navigation} />;
+      case 'Login':
+        return <LoginScreen navigation={navigation} />;
+      case 'Register':
+        return <RegisterScreen navigation={navigation} />;
+      case 'CommunityMemberDashboard':
+        return <CommunityMemberDashboard navigation={navigation} />;
+      case 'ReportWildlifeConflict':
+        return <ReportWildlifeConflictScreen navigation={navigation} />;
+      case 'ReportSubmittedSuccess':
+        return (
+          <ReportSubmittedSuccessScreen
+            route={{ params: screenParams }}
+            navigation={navigation}
+          />
+        );
+      case 'CommunityMemberReports':
+        return (
+          <CommunityMemberReportsScreen
+            route={{ params: screenParams }}
+            navigation={navigation}
+          />
+        );
       case 'LogIncident':
         return <LogIncidentScreen navigation={navigation} />;
       case 'IncidentSuccess':
@@ -88,20 +158,73 @@ export const RangerNavigator: React.FC = () => {
             navigation={navigation}
           />
         );
+      case 'ConflictOperationsHome':
+        return <ConflictOperationsHome navigation={navigation} />;
+      case 'PendingReports':
+        return <PendingReportsScreen navigation={navigation} />;
+      case 'ConflictReportDetails':
+        return (
+          <ConflictReportDetailsScreen
+            route={{ params: screenParams }}
+            navigation={navigation}
+          />
+        );
+      case 'VerifyConfirm':
+        return (
+          <VerifyConfirmScreen
+            route={{ params: screenParams }}
+            navigation={navigation}
+          />
+        );
+      case 'AvailableRangerSelection':
+        return (
+          <AvailableRangerSelection
+            route={{ params: screenParams }}
+            navigation={navigation}
+          />
+        );
+      case 'ConfirmAssignment':
+        return (
+          <ConfirmAssignmentScreen
+            route={{ params: screenParams }}
+            navigation={navigation}
+          />
+        );
+      case 'DispatchSuccess':
+        return (
+          <DispatchSuccessScreen
+            route={{ params: screenParams }}
+            navigation={navigation}
+          />
+        );
+      case 'ActiveIncidentTracking':
+        return (
+          <ActiveIncidentTrackingScreen
+            route={{ params: screenParams }}
+            navigation={navigation}
+          />
+        );
+      case 'ConflictActivity':
+        return <ConflictActivityScreen navigation={navigation} />;
+      case 'OfficerProfile':
+        return <OfficerProfileScreen navigation={navigation} />;
       case 'SyncStatus':
         return <SyncStatusScreen navigation={navigation} />;
       case 'MyIncidents':
         return <MyIncidentsScreen navigation={navigation} />;
       case 'Alerts':
         return <AlertsScreen navigation={navigation} />;
+      case 'RangerHome':
       case 'RangerDashboard':
-      default:
+      case 'RangerMainTabs':
         return <RangerDashboardScreen navigation={navigation} />;
+      default:
+        return <SplashScreen navigation={navigation} />;
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.screenArea}>{renderScreen()}</View>
 
       {/* BOTTOM TAB NAVIGATION */}
@@ -170,9 +293,27 @@ export const RangerNavigator: React.FC = () => {
               Alerts
             </Text>
           </TouchableOpacity>
+
+          {/* Profile Tab */}
+          <TouchableOpacity
+            style={styles.tabItem}
+            onPress={() => {
+              setActiveTab('Profile');
+              setCurrentScreen('OfficerProfile');
+            }}
+            accessible={true}
+            accessibilityRole="tab"
+            accessibilityLabel="Profile tab"
+            accessibilityState={{ selected: activeTab === 'Profile' }}
+          >
+            <Text style={[styles.tabIcon, activeTab === 'Profile' && styles.tabIconActive]}>👤</Text>
+            <Text style={[styles.tabLabel, activeTab === 'Profile' && styles.tabLabelActive]}>
+              Profile
+            </Text>
+          </TouchableOpacity>
         </View>
       ) : null}
-    </SafeAreaView>
+    </View>
   );
 };
 

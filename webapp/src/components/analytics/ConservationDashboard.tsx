@@ -1,0 +1,356 @@
+import { useState } from "react";
+import type { AnalyticsSummary, ParkConfig } from "../../types/reports";
+import { BarChart, DonutChart } from "./Charts";
+import { Icon } from "../layout/Icon";
+import type { IconName } from "../layout/Icon";
+import { Landscape } from "../layout/Landscape";
+interface Props {
+  userName: string;
+  summary: AnalyticsSummary | null;
+  isLoading: boolean;
+  error: string | null;
+  parks: ParkConfig[];
+  selectedPark: string;
+  onSelectPark: (park: string) => void;
+  onOpenReportGenerator: () => void;
+  onRefresh: () => void;
+}
+export function ConservationDashboard({
+  userName,
+  summary: s,
+  isLoading,
+  error,
+  parks,
+  selectedPark,
+  onSelectPark,
+  onOpenReportGenerator,
+  onRefresh,
+}: Props) {
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<"activity" | "name">("activity");
+  const areas = [...(s?.highRiskAreas || [])]
+    .filter((a) => a.location.toLowerCase().includes(query.toLowerCase()))
+    .sort((a, b) =>
+      sort === "activity"
+        ? b.totalAlerts - a.totalAlerts
+        : a.location.localeCompare(b.location),
+    );
+  const metrics: {
+    label: string;
+    value: number | undefined;
+    note: string;
+    icon: IconName;
+    tone: string;
+  }[] = [
+    {
+      label: "Recorded incidents",
+      value: s?.totalIncidents,
+      note: "Field observations & incident logs",
+      icon: "alert",
+      tone: "coral",
+    },
+    {
+      label: "Ranger patrols",
+      value: s?.totalPatrols,
+      note: s
+        ? `${s.patrolDistanceKm.toLocaleString()} km covered across the park`
+        : "Patrol coverage & distance",
+      icon: "route",
+      tone: "green",
+    },
+    {
+      label: "Wildlife conflicts",
+      value: s?.totalConflicts,
+      note: "Reported community encounters",
+      icon: "leaf",
+      tone: "amber",
+    },
+    {
+      label: "Areas of interest",
+      value: s?.highRiskAreas.length,
+      note: "Sectors with recorded activity",
+      icon: "pin",
+      tone: "blue",
+    },
+  ];
+  return (
+    <div className="dashboard">
+      <section className="overview-heading">
+        <div>
+          <div className="section-kicker">YOUR CONSERVATION WORKSPACE</div>
+          <h1>
+            The field, in focus<span className="heading-dot">.</span>
+          </h1>
+          <p>
+            Welcome back, {userName.split(" ")[0]}. Every insight makes a
+            difference.
+          </p>
+        </div>
+        <button className="btn-primary" onClick={onOpenReportGenerator}>
+          <Icon name="report" size={17} />
+          Create report
+          <Icon name="arrow" size={16} />
+        </button>
+      </section>
+      <section className="park-banner">
+        <Landscape />
+        <div className="park-banner-content">
+          <span className="banner-label">
+            <Icon name="pin" size={14} />
+            CONSERVATION LANDSCAPE
+          </span>
+          <h2>
+            {selectedPark === "All Parks"
+              ? "One island. A shared future."
+              : selectedPark}
+          </h2>
+          <p>A connected view of the places you protect.</p>
+          <div className="banner-bottom">
+            <span>OBSERVE / UNDERSTAND / PROTECT</span>
+            <span className="illustration-label">Landscape illustration</span>
+          </div>
+        </div>
+      </section>
+      <div className="dashboard-controls">
+        <div className="scope-control">
+          <Icon name="pin" size={17} />
+          <select
+            aria-label="Filter by national park"
+            value={selectedPark}
+            onChange={(e) => onSelectPark(e.target.value)}
+          >
+            <option value="All Parks">All national parks</option>
+            {!parks.some((p) => p.name === selectedPark) &&
+              selectedPark !== "All Parks" && (
+                <option value={selectedPark}>{selectedPark}</option>
+              )}
+            {parks.map((p) => (
+              <option key={p.id} value={p.name}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="data-status" role="status">
+          <span className={`status-dot ${error ? "unavailable" : ""}`} />
+          {isLoading
+            ? "Updating overview…"
+            : error
+              ? "Data unavailable"
+              : s?.dbConnected
+                ? "Connected to field data"
+                : "Awaiting field data"}
+        </div>
+        <button
+          className="icon-button refresh-button"
+          onClick={onRefresh}
+          disabled={isLoading}
+          title="Refresh analytics"
+          aria-label="Refresh analytics"
+        >
+          <Icon name="refresh" size={17} />
+        </button>
+      </div>
+      {error && (
+        <div className="data-error" role="alert">
+          <Icon name="alert" />
+          <div>
+            <strong>We couldn’t load your park insights.</strong>
+            <p>
+              Your connection may be unavailable. Try refreshing in a moment.
+            </p>
+          </div>
+          <button className="btn-secondary" onClick={onRefresh}>
+            Try again
+          </button>
+        </div>
+      )}
+      <section
+        className="metrics-grid"
+        aria-label="Park summary"
+        aria-busy={isLoading}
+      >
+        {metrics.map((m, i) => (
+          <article key={m.label} className={`metric-card ${m.tone}`}>
+            <div className="metric-top">
+              <span>{m.label}</span>
+              <Icon name={m.icon} size={19} />
+            </div>
+            <div className={`metric-value ${isLoading ? "is-loading" : ""}`}>
+              {isLoading
+                ? "—"
+                : error
+                  ? "—"
+                  : (m.value?.toLocaleString() ?? "—")}
+            </div>
+            <div className="metric-footer">
+              <span>{m.note}</span>
+              <span className="metric-index">0{i + 1}</span>
+            </div>
+          </article>
+        ))}
+      </section>
+      {!error && !isLoading && s && (
+        <>
+          <div className="insight-grid">
+            <section className="insight-panel">
+              <div className="panel-heading">
+                <div>
+                  <span className="section-kicker">FIELD INTELLIGENCE</span>
+                  <h2>Incident breakdown</h2>
+                </div>
+                <span className="count-tag">{s.totalIncidents} records</span>
+              </div>
+              <BarChart
+                data={s.incidentsByType.map((i) => ({
+                  label: i.type,
+                  value: i.count,
+                }))}
+                color="var(--chart-forest)"
+                emptyMessage="No incidents recorded for this park."
+              />
+              <div className="panel-footnote">
+                Distribution of recorded incident types
+              </div>
+            </section>
+            <section className="insight-panel">
+              <div className="panel-heading">
+                <div>
+                  <span className="section-kicker">HUMAN & WILDLIFE</span>
+                  <h2>Species encounters</h2>
+                </div>
+                <Icon name="leaf" />
+              </div>
+              <DonutChart
+                data={s.conflictsBySpecies.map((c) => ({
+                  label: c.species,
+                  value: c.count,
+                }))}
+                emptyMessage="No wildlife conflicts recorded for this park."
+              />
+              <div className="panel-footnote">
+                Community conflict reports, grouped by species
+              </div>
+            </section>
+          </div>
+          <div className="activity-grid">
+            <section className="insight-panel sector-panel">
+              <div className="panel-heading">
+                <div>
+                  <span className="section-kicker">WHERE TO FOCUS</span>
+                  <h2>Sector activity</h2>
+                </div>
+                <span className="count-tag">
+                  {s.highRiskAreas.length} sectors
+                </span>
+              </div>
+              <div className="sector-controls">
+                <label className="search-field">
+                  <Icon name="search" size={16} />
+                  <input
+                    aria-label="Search sectors"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Find a sector…"
+                  />
+                </label>
+                <select
+                  aria-label="Sort sectors"
+                  value={sort}
+                  onChange={(e) =>
+                    setSort(e.target.value as "activity" | "name")
+                  }
+                >
+                  <option value="activity">Most activity</option>
+                  <option value="name">Name A–Z</option>
+                </select>
+              </div>
+              <div className="table-scroll">
+                <table className="sector-table">
+                  <thead>
+                    <tr>
+                      <th>Sector / location</th>
+                      <th>Incidents</th>
+                      <th>Conflicts</th>
+                      <th>Total activity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {areas.map((a) => (
+                      <tr key={a.location}>
+                        <td>
+                          <span className="location-name">
+                            <Icon name="pin" size={15} />
+                            {a.location}
+                          </span>
+                        </td>
+                        <td>{a.incidents}</td>
+                        <td>{a.conflicts}</td>
+                        <td>
+                          <span className="activity-count">
+                            {a.totalAlerts}
+                            <span className="activity-meter">
+                              <span
+                                style={{
+                                  width: `${(a.totalAlerts / Math.max(...s.highRiskAreas.map((i) => i.totalAlerts), 1)) * 100}%`,
+                                }}
+                              />
+                            </span>
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {areas.length === 0 && (
+                <div className="empty-state">
+                  <Icon name="search" size={28} />
+                  <strong>
+                    {query ? "No matching sectors" : "No sector activity yet"}
+                  </strong>
+                  <p>
+                    {query
+                      ? "Try another location name."
+                      : "Field reports will appear here as they become available."}
+                  </p>
+                </div>
+              )}
+            </section>
+            <aside className="report-prompt">
+              <span className="report-prompt-icon">
+                <Icon name="report" size={28} />
+              </span>
+              <span className="section-kicker">MAKE IT ACTIONABLE</span>
+              <h2>
+                From the field.
+                <br />
+                To the next step.
+              </h2>
+              <p>
+                Bring incidents, patrol coverage and wildlife conflicts together
+                in one focused report.
+              </p>
+              <button onClick={onOpenReportGenerator}>
+                Open report studio
+                <Icon name="arrow" size={18} />
+              </button>
+              <div className="report-lines" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+                <i />
+              </div>
+            </aside>
+          </div>
+        </>
+      )}
+      {isLoading && (
+        <div className="dashboard-loading" role="status">
+          <span className="spinner" />
+          Gathering your park’s latest insights…
+        </div>
+      )}
+    </div>
+  );
+}

@@ -7,9 +7,9 @@ import {
   TextInput,
   RefreshControl,
   StyleSheet,
-  SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { THEME } from '../constants/theme';
 import { AppHeader } from '../components/AppHeader';
 import { IncidentCard } from '../components/IncidentCard';

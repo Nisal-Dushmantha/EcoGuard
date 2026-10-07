@@ -1,0 +1,3 @@
+import { BrandMark } from '../layout/BrandMark';
+import { Landscape } from '../layout/Landscape';
+export function AuthStory(){return <aside className="auth-story"><Landscape/><div className="story-brand"><BrandMark/>EcoGuard<span>FIELD NOTES / 01</span></div><div className="story-content"><span className="eyebrow">A WORKSPACE FOR THE WILD</span><h2>The bigger picture.<br/><em>The better future.</em></h2><p>From the first field observation to the next conservation decision. See it all, protect what matters.</p></div><div className="story-footer"><span>ROOTED IN SRI LANKA.<br/>BUILT FOR CONSERVATION.</span><span className="story-seal"><BrandMark/></span></div></aside>}
