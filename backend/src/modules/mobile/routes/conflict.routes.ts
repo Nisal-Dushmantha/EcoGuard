@@ -9,8 +9,10 @@ import {
   updateConflictStatus,
   createConflictReport,
   getCommunityMemberDashboard,
+  uploadEvidencePhoto,
 } from '../controllers/conflict.controller.js';
 import { authenticateToken, requireRole } from '../../../middlewares/auth.middleware.js';
+import { evidenceUpload } from '../../../middlewares/upload.middleware.js';
 
 const router = Router();
 
@@ -27,6 +29,32 @@ router.get(
   '/member-dashboard',
   authenticateToken,
   getCommunityMemberDashboard
+);
+
+// Upload evidence photo (multipart/form-data) — returns persistent URL
+// Must be called BEFORE createConflictReport so the JSON payload only carries a URL.
+//
+// The multer error wrapper ensures multer errors (wrong field name, file too large,
+// unsupported mime type) return a JSON 400 instead of hanging or crashing.
+router.post(
+  '/upload-photo',
+  authenticateToken,
+  (req, res, next) => {
+    console.log('[upload-photo] Multer middleware entering. Content-Type:', req.headers['content-type']);
+    evidenceUpload.single('photo')(req, res, (err) => {
+      if (err) {
+        console.error('[upload-photo] Multer error:', err.message);
+        res.status(400).json({
+          success: false,
+          message: `File upload error: ${err.message}`,
+        });
+        return;
+      }
+      console.log('[upload-photo] Multer processed OK. req.file present:', !!req.file);
+      next();
+    });
+  },
+  uploadEvidencePhoto
 );
 
 // Submit a new conflict report (Community Member & Mobile users)

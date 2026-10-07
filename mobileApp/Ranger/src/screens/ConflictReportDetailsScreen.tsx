@@ -557,10 +557,10 @@ export const ConflictReportDetailsScreen: React.FC<ConflictReportDetailsProps> =
         </View>
 
         {/* ── Photo Evidence Card if available ─────────────────────── */}
-        {report.photoUrl ? (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>📷 PHOTOGRAPHIC EVIDENCE</Text>
-            <SectionCard>
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>📷 PHOTOGRAPHIC EVIDENCE</Text>
+          <SectionCard>
+            {report.photoUrl && !report.photoUrl.startsWith('file://') && !report.photoUrl.startsWith('content://') ? (
               <View style={styles.photoContainer}>
                 <Image
                   source={{ uri: report.photoUrl }}
@@ -568,9 +568,14 @@ export const ConflictReportDetailsScreen: React.FC<ConflictReportDetailsProps> =
                   resizeMode="cover"
                 />
               </View>
-            </SectionCard>
-          </View>
-        ) : null}
+            ) : (
+              <View style={styles.noPhotoContainer}>
+                <Text style={styles.noPhotoIcon}>📷</Text>
+                <Text style={styles.noPhotoText}>No photo evidence provided</Text>
+              </View>
+            )}
+          </SectionCard>
+        </View>
 
         {/* ── Lifecycle Timeline ───────────────────────────────────── */}
         <View style={styles.section}>
@@ -883,6 +888,13 @@ const styles = StyleSheet.create({
   },
   callBtnIcon: { fontSize: 18 },
 
+  // Photo evidence
+  photoContainer: { borderRadius: 10, overflow: 'hidden', height: 200, width: '100%' },
+  evidenceImage: { width: '100%', height: '100%' },
+  noPhotoContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 16 },
+  noPhotoIcon: { fontSize: 24, marginBottom: 4, opacity: 0.5 },
+  noPhotoText: { fontSize: 12, color: '#6B7280', fontWeight: '500' },
+
   // Map
   mapBlock: { paddingHorizontal: 14, marginBottom: 12 },
   mapHeader: {
@@ -1066,16 +1078,6 @@ const styles = StyleSheet.create({
   },
   reasonInputError: { borderColor: '#EF4444' },
 
-  // Photo evidence
-  photoContainer: {
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  evidenceImage: {
-    width: '100%',
-    height: 180,
-    borderRadius: 10,
-  },
 
   // Lifecycle Timeline
   timelineContainer: {

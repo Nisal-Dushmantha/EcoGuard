@@ -1,7 +1,10 @@
 import { Request, Response } from 'express';
+import path from 'path';
+import fs from 'fs';
 import { CommunityReport } from '../../../models/CommunityReport.model.js';
 import { User } from '../../../models/User.model.js';
 import { AuthenticatedRequest } from '../../../middlewares/auth.middleware.js';
+import { UPLOADS_DIR } from '../../../middlewares/upload.middleware.js';
 
 export const getDashboardSummary = async (req: AuthenticatedRequest | Request, res: Response) => {
   try {
@@ -517,5 +520,63 @@ export const getCommunityMemberDashboard = async (req: Request, res: Response) =
   } catch (err: any) {
     console.error('Error in getCommunityMemberDashboard:', err);
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+/**
+ * POST /api/mobile/conflicts/upload-photo
+ * Accepts multipart/form-data with a single field named 'photo'.
+ * Uses memoryStorage — req.file.buffer is written to disk here.
+ * Returns { success: true, data: { photoUrl } } on success.
+ */
+export const uploadEvidencePhoto = async (req: Request, res: Response): Promise<void> => {
+  console.log('\n══ [upload-photo] Route handler ENTERED ══');
+  console.log('[upload-photo] Method:', req.method);
+  console.log('[upload-photo] Content-Type:', req.headers['content-type']);
+  console.log('[upload-photo] req.file present:', !!req.file);
+
+  if (req.file) {
+    console.log('[upload-photo] req.file.fieldname:', req.file.fieldname);
+    console.log('[upload-photo] req.file.originalname:', req.file.originalname);
+    console.log('[upload-photo] req.file.mimetype:', req.file.mimetype);
+    console.log('[upload-photo] req.file.size:', req.file.size, 'bytes');
+    console.log('[upload-photo] req.file.buffer present:', !!req.file.buffer, '| buffer length:', req.file.buffer?.length);
+  }
+
+  try {
+    if (!req.file || !req.file.buffer) {
+      console.warn('[upload-photo] ✗ No file/buffer in request — returning 400.');
+      res.status(400).json({
+        success: false,
+        message: "No photo received. Send the image as a multipart/form-data field named 'photo'.",
+      });
+      return;
+    }
+
+    // Build a unique filename and write the buffer to disk
+    const ext = path.extname(req.file.originalname || '.jpg') || '.jpg';
+    const filename = `evidence-${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`;
+    const filePath = path.join(UPLOADS_DIR, filename);
+
+    console.log('[upload-photo] Writing buffer to disk:', filePath);
+    fs.writeFileSync(filePath, req.file.buffer);
+    console.log('[upload-photo] ✓ File written to disk successfully.');
+
+    // Build the persistent public URL
+    const baseUrl = process.env.BACKEND_BASE_URL || `${req.protocol}://${req.get('host')}`;
+    const photoUrl = `${baseUrl}/uploads/evidence/${filename}`;
+
+    console.log('[upload-photo] ✓ Persistent URL:', photoUrl);
+
+    res.status(201).json({
+      success: true,
+      message: 'Evidence photo uploaded successfully.',
+      data: { photoUrl },
+    });
+
+    console.log('[upload-photo] ✓ Response sent. Done.\n');
+  } catch (err: any) {
+    console.error('[upload-photo] ✗ Unexpected error:', err.message || err);
+    res.status(500).json({ success: false, message: err?.message || 'Photo upload failed.' });
   }
 };

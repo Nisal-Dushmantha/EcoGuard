@@ -20,7 +20,7 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
     setLoading(true);
     try {
       const res = await photoService.takePhoto();
-      onPhotoSelected(res.uri, res.base64);
+      if (res) onPhotoSelected(res.uri);
     } catch (err) {
       console.error('Failed to take photo:', err);
     } finally {
@@ -32,7 +32,7 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
     setLoading(true);
     try {
       const res = await photoService.pickFromGallery();
-      onPhotoSelected(res.uri, res.base64);
+      if (res) onPhotoSelected(res.uri);
     } catch (err) {
       console.error('Failed to pick photo:', err);
     } finally {

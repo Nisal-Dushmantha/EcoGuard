@@ -31,15 +31,16 @@ const ANIMAL_SPECIES_OPTIONS = [
   'Other',
 ];
 
-const CONFLICT_TYPE_OPTIONS = [
-  'Crop Raiding / Crop Damage',
-  'Property Damage / Destruction',
-  'Human Attack / Injury Threat',
-  'Livestock Attack / Depredation',
-  'Animal Trapped / Entangled',
-  'Animal Injured / Sick',
-  'Settlement Intrusion',
-  'Other Conflict',
+// ── Conflict Type: label (UI display) → value (exact backend enum) ──────────
+type ConflictTypeOption = { label: string; value: string };
+
+const CONFLICT_TYPE_OPTIONS: ConflictTypeOption[] = [
+  { label: 'Crop Raiding / Crop Damage',          value: 'Crop Raiding' },
+  { label: 'Property Damage / Destruction',        value: 'Property Damage' },
+  { label: 'Livestock Attack / Depredation',       value: 'Livestock Predation' },
+  { label: 'Human-Wildlife Encounter / Threat',    value: 'Human Threat/Encounter' },
+  { label: 'Electric Fence Breach',                value: 'Electric Fence Breach' },
+  { label: 'Other Conflict',                       value: 'Other Conflict' },
 ];
 
 const SEVERITY_OPTIONS: ('Low' | 'Medium' | 'High' | 'Critical')[] = [
@@ -58,7 +59,10 @@ const PARKS_OPTIONS = [
   'Boundary Village Sector',
 ];
 
-// Helper Dropdown Component
+// ── Helper Dropdown Component ────────────────────────────────────────────────
+// Supports plain string arrays OR ConflictTypeOption { label, value } arrays.
+// When using ConflictTypeOption[], `value` holds the backend enum value;
+// `displayValue` resolves to the friendly label for UI display.
 const SelectDropdown = ({
   label,
   placeholder,
@@ -70,11 +74,19 @@ const SelectDropdown = ({
   label: string;
   placeholder: string;
   value: string;
-  options: string[];
+  options: string[] | ConflictTypeOption[];
   onSelect: (val: string) => void;
   error?: string;
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
+
+  // Normalise options to { label, value } shape
+  const normalised: ConflictTypeOption[] = (options as any[]).map((o) =>
+    typeof o === 'string' ? { label: o, value: o } : o
+  );
+
+  // Find the friendly display label for the currently selected value
+  const displayValue = normalised.find((o) => o.value === value)?.label || value;
 
   return (
     <View style={styles.inputGroup}>
@@ -83,8 +95,8 @@ const SelectDropdown = ({
         style={[styles.dropdownBtn, error && styles.inputErrorBorder]}
         onPress={() => setModalVisible(true)}
       >
-        <Text style={value ? styles.dropdownBtnText : styles.dropdownPlaceholder}>
-          {value || placeholder}
+        <Text style={displayValue ? styles.dropdownBtnText : styles.dropdownPlaceholder}>
+          {displayValue || placeholder}
         </Text>
         <Text style={styles.dropdownArrow}>▼</Text>
       </TouchableOpacity>
@@ -104,20 +116,20 @@ const SelectDropdown = ({
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select {label}</Text>
             <FlatList
-              data={options}
-              keyExtractor={(item) => item}
+              data={normalised}
+              keyExtractor={(item) => item.value}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={[styles.modalOption, value === item && styles.modalOptionActive]}
+                  style={[styles.modalOption, value === item.value && styles.modalOptionActive]}
                   onPress={() => {
-                    onSelect(item);
+                    onSelect(item.value);   // ← always send the backend enum value
                     setModalVisible(false);
                   }}
                 >
                   <Text
-                    style={[styles.modalOptionText, value === item && styles.modalOptionTextActive]}
+                    style={[styles.modalOptionText, value === item.value && styles.modalOptionTextActive]}
                   >
-                    {item}
+                    {item.label}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -158,6 +170,7 @@ export const ReportWildlifeConflictScreen: React.FC<ReportWildlifeConflictProps>
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitStepText, setSubmitStepText] = useState('Submitting report…');
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Fetch logged in profile for reporter details
@@ -204,7 +217,9 @@ export const ReportWildlifeConflictScreen: React.FC<ReportWildlifeConflictProps>
     setLoadingPhoto(true);
     try {
       const p = await photoService.takePhoto();
-      setPhoto(p);
+      if (p) {
+        setPhoto(p);
+      }
     } catch {
       Alert.alert('Image Error', 'Unable to capture image.');
     } finally {
@@ -216,7 +231,9 @@ export const ReportWildlifeConflictScreen: React.FC<ReportWildlifeConflictProps>
     setLoadingPhoto(true);
     try {
       const p = await photoService.pickFromGallery();
-      setPhoto(p);
+      if (p) {
+        setPhoto(p);
+      }
     } catch {
       Alert.alert('Image Error', 'Unable to select image.');
     } finally {
@@ -248,6 +265,73 @@ export const ReportWildlifeConflictScreen: React.FC<ReportWildlifeConflictProps>
   const handleConfirmSubmit = async () => {
     setSubmitting(true);
     setSubmitError(null);
+
+    // ── Debug: verify the backend enum value is being sent ──────────────────
+    const selectedConflictOption = CONFLICT_TYPE_OPTIONS.find((o) => o.value === conflictType);
+    console.log('Selected conflict option:', selectedConflictOption);
+    console.log('Conflict value to be sent to backend:', conflictType);
+    // ────────────────────────────────────────────────────────────────────────
+
+    let persistentPhotoUrl: string | undefined = undefined;
+
+    if (photo) {
+      setSubmitStepText('Uploading evidence…');
+      try {
+        persistentPhotoUrl = await photoService.uploadEvidence(photo);
+        console.log('[Submit] Evidence uploaded. URL:', persistentPhotoUrl);
+      } catch (err: any) {
+        setSubmitting(false);
+        Alert.alert(
+          'Evidence Upload Failed',
+          'Unable to upload the evidence photo. What would you like to do?',
+          [
+            {
+              text: 'Retry',
+              onPress: () => handleConfirmSubmit(),
+            },
+            {
+              text: 'Submit Without Photo',
+              style: 'destructive',
+              onPress: async () => {
+                // Clear photo and submit immediately without evidence
+                setPhoto(null);
+                setSubmitting(true);
+                setSubmitStepText('Submitting report…');
+                try {
+                  const fullDesc2 = herdSize && parseInt(herdSize, 10) > 1
+                    ? `[Herd Size: ${herdSize}] ${description.trim()}`
+                    : description.trim();
+                  const created2 = await conflictApi.createConflictReport({
+                    reporterName: reporterName || 'Community Member',
+                    contactNumber: contactNumber || 'Not provided',
+                    conflictType,
+                    animalSpecies,
+                    severity,
+                    locationName: locationName.trim(),
+                    park,
+                    latitude,
+                    longitude,
+                    description: fullDesc2,
+                    photoUrl: undefined,
+                  });
+                  setShowConfirmModal(false);
+                  navigation.replace('ReportSubmittedSuccess', { report: created2 });
+                } catch (e2: any) {
+                  setSubmitError(e2.message || 'Unable to submit your report. Please try again.');
+                } finally {
+                  setSubmitting(false);
+                }
+              },
+            },
+            { text: 'Cancel', style: 'cancel' },
+          ]
+        );
+        return;
+      }
+    }
+
+    setSubmitStepText('Submitting report…');
+
     try {
       const fullDesc = herdSize && parseInt(herdSize, 10) > 1
         ? `[Herd Size: ${herdSize}] ${description.trim()}`
@@ -264,7 +348,7 @@ export const ReportWildlifeConflictScreen: React.FC<ReportWildlifeConflictProps>
         latitude,
         longitude,
         description: fullDesc,
-        photoUrl: photo ? photo.uri : undefined,
+        photoUrl: persistentPhotoUrl,
       });
 
       setShowConfirmModal(false);
@@ -460,12 +544,20 @@ export const ReportWildlifeConflictScreen: React.FC<ReportWildlifeConflictProps>
           {photo ? (
             <View style={styles.photoPreviewBox}>
               <Image source={{ uri: photo.uri }} style={styles.photoPreviewImage} />
-              <View style={styles.photoActions}>
+              <View style={styles.photoActionsRow}>
                 <Text style={styles.photoFileName} numberOfLines={1}>
                   📷 {photo.fileName || 'Captured Evidence'}
                 </Text>
                 <TouchableOpacity style={styles.removePhotoBtn} onPress={() => setPhoto(null)}>
-                  <Text style={styles.removePhotoText}>Remove / Retake</Text>
+                  <Text style={styles.removePhotoText}>✕ Remove</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.photoRetakeRow}>
+                <TouchableOpacity style={styles.photoSubBtn} onPress={handleTakePhoto} disabled={loadingPhoto}>
+                  <Text style={styles.photoSubBtnText}>📷 Retake Photo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.photoSubBtn} onPress={handlePickPhoto} disabled={loadingPhoto}>
+                  <Text style={styles.photoSubBtnText}>🖼 Choose Other</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -589,7 +681,10 @@ export const ReportWildlifeConflictScreen: React.FC<ReportWildlifeConflictProps>
                 disabled={submitting}
               >
                 {submitting ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={styles.confirmSubmitText}>{submitStepText}</Text>
+                  </View>
                 ) : (
                   <Text style={styles.confirmSubmitText}>Confirm & Submit Report</Text>
                 )}
@@ -748,16 +843,35 @@ const styles = StyleSheet.create({
   photoBtnText: { fontSize: 12, fontWeight: '700', color: '#374151' },
   photoPreviewBox: { borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E7EB' },
   photoPreviewImage: { width: '100%', height: 160 },
-  photoActions: {
+  photoActionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    padding: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
-  photoFileName: { fontSize: 12, color: '#374151', flex: 1, fontWeight: '500' },
-  removePhotoBtn: { backgroundColor: '#FEE2E2', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  removePhotoText: { color: '#B91C1C', fontSize: 11, fontWeight: '700' },
+  photoFileName: { fontSize: 12, color: '#374151', flex: 1, fontWeight: '600' },
+  removePhotoBtn: { backgroundColor: '#FEE2E2', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6 },
+  removePhotoText: { color: '#B91C1C', fontSize: 11, fontWeight: '800' },
+  photoRetakeRow: {
+    flexDirection: 'row',
+    backgroundColor: '#F9FAFB',
+    padding: 8,
+    gap: 8,
+  },
+  photoSubBtn: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 6,
+    paddingVertical: 6,
+    alignItems: 'center',
+  },
+  photoSubBtnText: { fontSize: 11, fontWeight: '700', color: '#374151' },
 
   // Reporter Card
   reporterCard: { backgroundColor: '#F9FAFB', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#E5E7EB' },
