@@ -9,7 +9,6 @@ interface LiveMapProps {
   selectedPark: string;
   onSelectAnimal?: (animal: CollaredAnimal) => void;
   onSelectAlert?: (alert: WildlifeAlert) => void;
-  onSimulatePing?: (collarId: string) => void;
 }
 
 export const LiveMap: React.FC<LiveMapProps> = ({
@@ -19,7 +18,6 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   selectedPark,
   onSelectAnimal,
   onSelectAlert,
-  onSimulatePing,
 }) => {
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -199,19 +197,6 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           >
             <Icon name="crosshair" size={14} /> Boundary
           </button>
-
-          {onSimulatePing && filteredAnimals.length > 0 && (
-            <button
-              className="btn-ping"
-              onClick={() => {
-                const atRisk = filteredAnimals.find((a) => a.status === 'High Risk') || filteredAnimals[0];
-                onSimulatePing(atRisk.collarId);
-              }}
-              title="Trigger real-time telemetry ping simulation"
-            >
-              <Icon name="activity" size={14} /> Simulate Ping
-            </button>
-          )}
         </div>
       </div>
 

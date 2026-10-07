@@ -237,7 +237,6 @@ export const WildlifeModule: React.FC<WildlifeModuleProps> = ({
               setActiveTab('tracking');
             }}
             onSelectAlert={openAlertModal}
-            onSimulatePing={handleSimulatePing}
           />
         )}
 
@@ -258,7 +257,6 @@ export const WildlifeModule: React.FC<WildlifeModuleProps> = ({
             selectedPark={selectedPark}
             onSelectAnimal={(an) => setSelectedAnimalForModal(an)}
             onSelectAlert={openAlertModal}
-            onSimulatePing={handleSimulatePing}
           />
         )}
 

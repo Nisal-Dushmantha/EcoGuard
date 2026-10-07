@@ -12,7 +12,6 @@ interface MonitoringDashboardProps {
   onChangeTab: (tab: 'dashboard' | 'tracking' | 'map' | 'zones' | 'alerts') => void;
   onSelectAnimal: (animal: CollaredAnimal) => void;
   onSelectAlert: (alert: WildlifeAlert) => void;
-  onSimulatePing: (collarId: string) => void;
 }
 
 export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
@@ -24,7 +23,6 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
   onChangeTab,
   onSelectAnimal,
   onSelectAlert,
-  onSimulatePing,
 }) => {
   const activeAlerts = alerts.filter((a) => a.status === 'Active');
   const animalsAtRisk = animals.filter((a) => a.status === 'High Risk' || a.isInHighRiskZone);
@@ -144,7 +142,6 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
               selectedPark={selectedPark}
               onSelectAnimal={onSelectAnimal}
               onSelectAlert={onSelectAlert}
-              onSimulatePing={onSimulatePing}
             />
           </div>
         </div>
