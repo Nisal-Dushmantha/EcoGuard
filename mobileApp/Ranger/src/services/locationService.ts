@@ -49,11 +49,17 @@ class LocationService {
         accuracy: Location.Accuracy.Balanced,
       });
 
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT')), 10000)
-      );
+      let timeoutId: NodeJS.Timeout | undefined;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('TIMEOUT')), 10000);
+      });
 
-      const pos = await Promise.race([locationPromise, timeoutPromise]);
+      let pos: Location.LocationObject;
+      try {
+        pos = await Promise.race([locationPromise, timeoutPromise]);
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+      }
 
       const lat = parseFloat(pos.coords.latitude.toFixed(5));
       const lng = parseFloat(pos.coords.longitude.toFixed(5));

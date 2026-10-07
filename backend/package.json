@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test:uc03": "jest src/__tests__/uc03",
+    "test:coverage:uc03": "jest src/__tests__/uc03 --coverage"
   },
   "dependencies": {
     "@types/multer": "^2.3.0",
@@ -23,8 +25,11 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
+    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.10.7",
+    "jest": "^30.5.2",
+    "ts-jest": "^29.4.14",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }

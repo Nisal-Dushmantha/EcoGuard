@@ -6,9 +6,9 @@ import { fileURLToPath } from 'url';
 // ── Resolve uploads directory ─────────────────────────────────────────────────
 // __dirname here = backend/src/middlewares (tsx runs source directly)
 // We walk up two levels to reach the backend project root, then /uploads/evidence
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-export const UPLOADS_DIR = path.resolve(__dirname, '..', '..', 'uploads', 'evidence');
+const currentFilename = typeof __filename !== 'undefined' ? __filename : ((import.meta as any)?.url ? fileURLToPath((import.meta as any).url) : '');
+const currentDirname = path.dirname(currentFilename);
+export const UPLOADS_DIR = path.resolve(currentDirname, '..', '..', 'uploads', 'evidence');
 
 // Ensure directory exists now at module load time
 if (!fs.existsSync(UPLOADS_DIR)) {

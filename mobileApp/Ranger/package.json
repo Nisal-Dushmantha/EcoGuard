@@ -9,7 +9,9 @@
     "start:tunnel": "expo start --tunnel",
     "start:rn": "react-native start",
     "test": "jest",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:uc03": "jest __tests__/uc03",
+    "test:coverage:uc03": "jest __tests__/uc03 --coverage"
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.16",
@@ -63,12 +65,25 @@
       "^.+\\.(ts|tsx)$": [
         "ts-jest",
         {
-          "tsconfig": "tsconfig.json"
+          "tsconfig": "tsconfig.json",
+          "diagnostics": false
         }
       ]
     },
     "testMatch": [
       "**/__tests__/**/*.(spec|test).[jt]s?(x)"
+    ],
+    "coverageProvider": "v8",
+    "coverageReporters": ["text", "text-summary", "lcov"],
+    "collectCoverageFrom": [
+      "src/services/conflictApi.ts",
+      "src/services/locationService.ts",
+      "src/services/photoService.ts",
+      "src/config/apiConfig.ts"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/__tests__/"
     ]
   }
 }

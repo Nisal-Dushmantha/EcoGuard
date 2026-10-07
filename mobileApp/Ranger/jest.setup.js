@@ -103,9 +103,39 @@ jest.mock('expo-file-system/legacy', () => ({
   },
 }));
 
+// Mock expo-location
+jest.mock('expo-location', () => ({
+  requestForegroundPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+  hasServicesEnabledAsync: jest.fn(() => Promise.resolve(true)),
+  getCurrentPositionAsync: jest.fn(() =>
+    Promise.resolve({
+      coords: {
+        latitude: 6.3712,
+        longitude: 81.5204,
+        accuracy: 10,
+      },
+    })
+  ),
+  reverseGeocodeAsync: jest.fn(() =>
+    Promise.resolve([
+      {
+        name: 'Mahasenpura Village',
+        district: 'Hambantota',
+        region: 'Southern Province',
+      },
+    ])
+  ),
+  Accuracy: {
+    Balanced: 3,
+    High: 4,
+    Low: 1,
+  },
+}));
+
 // Mock expo-constants
 jest.mock('expo-constants', () => ({
   expoConfig: {
     extra: {},
   },
 }));
+

@@ -1,0 +1,23 @@
+{
+  "name": "ecoguard",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test:uc03:unit": "npm run test:uc03 --prefix backend",
+    "test:uc03:components": "npm run test:uc03 --prefix mobileApp/Ranger",
+    "test:uc03": "npm run test:uc03:unit && npm run test:uc03:components",
+    "test:coverage:uc03": "npm run test:coverage:uc03 --prefix backend && npm run test:coverage:uc03 --prefix mobileApp/Ranger"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nisal-Dushmantha/EcoGuard.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Nisal-Dushmantha/EcoGuard/issues"
+  },
+  "homepage": "https://github.com/Nisal-Dushmantha/EcoGuard#readme",
+  "description": ""
+}
