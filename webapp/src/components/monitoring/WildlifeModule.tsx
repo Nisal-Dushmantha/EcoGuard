@@ -96,17 +96,6 @@ export const WildlifeModule: React.FC<WildlifeModuleProps> = ({
     }
   };
 
-  // Trigger live collar ping simulation
-  const handleSimulatePing = async (collarId: string) => {
-    try {
-      const updatedAnimal = await wildlifeService.simulatePing(collarId);
-      setAnimals((prev) =>
-        prev.map((a) => (a.collarId === collarId ? updatedAnimal : a))
-      );
-    } catch (err) {
-      console.error('Error simulating collar ping:', err);
-    }
-  };
 
   // Open modal for a specific alert
   const openAlertModal = (alert: WildlifeAlert) => {
@@ -245,7 +234,6 @@ export const WildlifeModule: React.FC<WildlifeModuleProps> = ({
             animals={animals}
             selectedPark={selectedPark}
             onSelectAnimalForMap={handleSelectAnimalForMap}
-            onSimulatePing={handleSimulatePing}
           />
         )}
 

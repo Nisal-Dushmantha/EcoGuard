@@ -6,14 +6,12 @@ interface AnimalTrackingProps {
   animals: CollaredAnimal[];
   selectedPark: string;
   onSelectAnimalForMap?: (animal: CollaredAnimal) => void;
-  onSimulatePing?: (collarId: string) => void;
 }
 
 export const AnimalTracking: React.FC<AnimalTrackingProps> = ({
   animals,
   selectedPark,
   onSelectAnimalForMap,
-  onSimulatePing,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSpecies, setSelectedSpecies] = useState<string>('All Species');
@@ -191,15 +189,6 @@ export const AnimalTracking: React.FC<AnimalTrackingProps> = ({
                       title="Locate on Live Map"
                     >
                       <Icon name="map" size={14} /> Locate
-                    </button>
-                  )}
-                  {onSimulatePing && (
-                    <button
-                      className="btn-ping"
-                      onClick={() => onSimulatePing(animal.collarId)}
-                      title="Simulate Realtime Ping"
-                    >
-                      <Icon name="activity" size={14} /> Ping
                     </button>
                   )}
                 </div>
