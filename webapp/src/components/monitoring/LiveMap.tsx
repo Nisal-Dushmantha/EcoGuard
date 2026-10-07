@@ -235,6 +235,24 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             {/* Base Background Grid */}
             <rect x="0" y="0" width="900" height="560" fill="url(#topoGrid)" />
 
+            {/* Satellite Forest Canopy Overlay */}
+            {mapMode === 'satellite' && (
+              <g className="satellite-vegetation-canopy" opacity="0.32">
+                <circle cx="280" cy="200" r="110" fill="#2d6a4f" />
+                <circle cx="580" cy="310" r="140" fill="#1b4332" />
+                <circle cx="360" cy="420" r="95" fill="#40916c" />
+                <circle cx="720" cy="210" r="105" fill="#2d6a4f" />
+              </g>
+            )}
+
+            {/* Infrared Thermal Heat Signatures Overlay */}
+            {mapMode === 'infrared' && (
+              <g className="infrared-thermal-hotspots" opacity="0.5">
+                <circle cx="320" cy="240" r="100" fill="url(#highRiskGlow)" />
+                <circle cx="640" cy="320" r="120" fill="url(#highRiskGlow)" />
+              </g>
+            )}
+
             {/* Park Boundary Contour */}
             {showBoundaries && (
               <g className="park-boundaries">

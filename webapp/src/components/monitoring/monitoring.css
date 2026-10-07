@@ -387,6 +387,29 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.map-actions .btn-detail {
+  flex: initial;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.map-actions .btn-detail:hover {
+  background: var(--bg-secondary-hover);
+  color: var(--text-main);
+  border-color: var(--border-medium);
+}
+
+.map-actions .btn-detail.active {
+  background: var(--primary-subtle, rgba(171, 197, 135, 0.15));
+  border-color: var(--primary);
+  color: var(--primary-light, #c4dba1);
+  font-weight: 650;
+  box-shadow: 0 0 8px rgba(171, 197, 135, 0.2);
 }
 
 .map-viewport-wrapper {
@@ -397,6 +420,37 @@
   background: #111a14;
   overflow: hidden;
   user-select: none;
+  transition: background 0.3s ease;
+}
+
+/* Map Visualization Modes */
+.map-viewport-wrapper.mode-dark-topo {
+  background: #0f1812;
+}
+
+.map-viewport-wrapper.mode-satellite {
+  background: radial-gradient(ellipse at 50% 40%, #15321e 0%, #0d2215 55%, #07130b 100%);
+}
+.map-viewport-wrapper.mode-satellite .topo-contours path {
+  stroke: rgba(144, 238, 144, 0.18);
+}
+.map-viewport-wrapper.mode-satellite .park-boundaries path {
+  fill: rgba(46, 125, 50, 0.14);
+  stroke: #7cb342;
+}
+
+.map-viewport-wrapper.mode-infrared {
+  background: radial-gradient(ellipse at 50% 50%, #1f0b29 0%, #12051c 60%, #08020d 100%);
+}
+.map-viewport-wrapper.mode-infrared .topo-contours path {
+  stroke: rgba(255, 0, 128, 0.2);
+}
+.map-viewport-wrapper.mode-infrared .park-boundaries path {
+  fill: rgba(255, 0, 90, 0.08);
+  stroke: #ff2a85;
+}
+.map-viewport-wrapper.mode-infrared .animal-pin-marker {
+  filter: drop-shadow(0 0 8px rgba(255, 120, 50, 0.85));
 }
 
 [data-theme="light"] .map-viewport-wrapper {
