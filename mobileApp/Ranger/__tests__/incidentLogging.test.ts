@@ -1,4 +1,4 @@
-import { validateIncidentForm } from '../src/utils/validators';
+import { validateIncidentForm, validateRangerLogin } from '../src/utils/validators';
 import { IncidentStorageService } from '../src/services/incidentStorage';
 import { locationService } from '../src/services/locationService';
 import { photoService } from '../src/services/photoService';
@@ -7,6 +7,8 @@ import { syncService } from '../src/services/syncService';
 import { incidentApi } from '../src/services/incidentApi';
 import { SYNC_STATUS } from '../src/constants/syncStatus';
 import { LocalIncidentRecord } from '../src/types/incident';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 
 describe('UC01 – Ranger Incident Logging Comprehensive Test Suite', () => {
   beforeEach(async () => {
@@ -379,18 +381,492 @@ describe('UC01 – Ranger Incident Logging Comprehensive Test Suite', () => {
     expect(pendingOnly.some((i) => i.localId === 'LOCAL-DISP-09')).toBe(true);
   });
 
-  // TEST 16: Photo handling
-  test('Test 16: Photo capture and selection returns valid URI', async () => {
-    const photoCamera = await photoService.takePhoto();
-    expect(photoCamera).not.toBeNull();
-    if (photoCamera) {
-      expect(photoCamera.uri).toBeDefined();
-    }
+  // TEST 17: Negative coordinate validation out of range
+  test('Test 17: Negative coordinate boundaries are rejected', () => {
+    // Missing location
+    const missingLoc = validateIncidentForm({
+      incidentType: 'Snare Detected',
+      location: null as any,
+      description: 'Test description 12345',
+    });
+    expect(missingLoc.isValid).toBe(false);
+    expect(missingLoc.errors.location).toMatch(/GPS location is required/i);
 
-    const photoGallery = await photoService.pickFromGallery();
-    expect(photoGallery).not.toBeNull();
-    if (photoGallery) {
-      expect(photoGallery.uri).toBeDefined();
-    }
+    // Latitude > 90
+    const latHigh = validateIncidentForm({
+      incidentType: 'Snare Detected',
+      location: { latitude: 91, longitude: 80 },
+      description: 'Test description 12345',
+    });
+    expect(latHigh.isValid).toBe(false);
+    expect(latHigh.errors.location).toMatch(/out of valid range/i);
+
+    // Latitude < -90
+    const latLow = validateIncidentForm({
+      incidentType: 'Snare Detected',
+      location: { latitude: -95, longitude: 80 },
+      description: 'Test description 12345',
+    });
+    expect(latLow.isValid).toBe(false);
+    expect(latLow.errors.location).toMatch(/out of valid range/i);
+
+    // Longitude > 180
+    const lngHigh = validateIncidentForm({
+      incidentType: 'Snare Detected',
+      location: { latitude: 10, longitude: 185 },
+      description: 'Test description 12345',
+    });
+    expect(lngHigh.isValid).toBe(false);
+    expect(lngHigh.errors.location).toMatch(/out of valid range/i);
+
+    // Longitude < -180
+    const lngLow = validateIncidentForm({
+      incidentType: 'Snare Detected',
+      location: { latitude: 10, longitude: -185 },
+      description: 'Test description 12345',
+    });
+    expect(lngLow.isValid).toBe(false);
+    expect(lngLow.errors.location).toMatch(/out of valid range/i);
+
+    // NaN coordinates
+    const nanCoords = validateIncidentForm({
+      incidentType: 'Snare Detected',
+      location: { latitude: NaN, longitude: 80 },
+      description: 'Test description 12345',
+    });
+    expect(nanCoords.isValid).toBe(false);
+    expect(nanCoords.errors.location).toMatch(/invalid/i);
+  });
+
+  // TEST 18: Invalid incident type and extreme description lengths
+  test('Test 18: Unrecognized incident category and excessive description length rejected', () => {
+    const invalidType = validateIncidentForm({
+      incidentType: 'Unidentified Flying Object' as any,
+      location: { latitude: 6.37, longitude: 81.52 },
+      description: 'Test valid description here',
+    });
+    expect(invalidType.isValid).toBe(false);
+    expect(invalidType.errors.incidentType).toMatch(/invalid incident type/i);
+
+    const overlyLong = validateIncidentForm({
+      incidentType: 'Snare Detected',
+      location: { latitude: 6.37, longitude: 81.52 },
+      description: 'A'.repeat(1501),
+    });
+    expect(overlyLong.isValid).toBe(false);
+    expect(overlyLong.errors.description).toMatch(/cannot exceed 1500 characters/i);
+  });
+
+  // TEST 19: Ranger login validator test
+  test('Test 19: Ranger login input validation covers empty and short fields', () => {
+    // Empty identifier
+    const res1 = validateRangerLogin('', 'pass123');
+    expect(res1.isValid).toBe(false);
+    expect(res1.errors.identifier).toBeDefined();
+
+    // Empty password
+    const res2 = validateRangerLogin('RN-402', '');
+    expect(res2.isValid).toBe(false);
+    expect(res2.errors.password).toBeDefined();
+
+    // Short password (< 4)
+    const res3 = validateRangerLogin('RN-402', '12');
+    expect(res3.isValid).toBe(false);
+    expect(res3.errors.password).toMatch(/at least 4 characters/i);
+
+    // Valid login
+    const res4 = validateRangerLogin('RN-402', 'securePass');
+    expect(res4.isValid).toBe(true);
+    expect(Object.keys(res4.errors).length).toBe(0);
+  });
+
+  // TEST 20: Storage save updates existing incident
+  test('Test 20: Storage service correctly updates existing incident with matching localId', async () => {
+    const original: LocalIncidentRecord = {
+      localId: 'LOCAL-UPDATE-10',
+      rangerId: 'RN-402',
+      incidentType: 'Snare Detected',
+      latitude: 6.35,
+      longitude: 81.55,
+      description: 'Initial note',
+      reportedAt: new Date().toISOString(),
+      syncStatus: SYNC_STATUS.PENDING,
+      syncAttempts: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      clientReferenceId: 'LOCAL-UPDATE-10',
+    };
+    await IncidentStorageService.saveIncident(original);
+
+    const updated = await IncidentStorageService.saveIncident({
+      ...original,
+      description: 'Updated field note after investigation',
+    });
+    expect(updated.description).toBe('Updated field note after investigation');
+
+    const retrieved = await IncidentStorageService.getLocalIncident('LOCAL-UPDATE-10');
+    expect(retrieved?.description).toBe('Updated field note after investigation');
+  });
+
+  // TEST 21: Storage lookup supports backendId and clientReferenceId, returns null if missing
+  test('Test 21: Storage lookup supports backendId and clientReferenceId, returns null if missing', async () => {
+    const item: LocalIncidentRecord = {
+      localId: 'LOCAL-REF-11',
+      rangerId: 'RN-402',
+      incidentType: 'Animal Carcass',
+      latitude: 6.36,
+      longitude: 81.56,
+      description: 'Found leopard remains',
+      reportedAt: new Date().toISOString(),
+      syncStatus: SYNC_STATUS.SYNCED,
+      syncAttempts: 1,
+      backendId: 'SERVER-999',
+      clientReferenceId: 'CLIENT-REF-UNIQUE-99',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await IncidentStorageService.saveIncident(item);
+
+    const byBackendId = await IncidentStorageService.getLocalIncident('SERVER-999');
+    expect(byBackendId?.localId).toBe('LOCAL-REF-11');
+
+    const byClientRef = await IncidentStorageService.getLocalIncident('CLIENT-REF-UNIQUE-99');
+    expect(byClientRef?.localId).toBe('LOCAL-REF-11');
+
+    const missing = await IncidentStorageService.getLocalIncident('NON-EXISTENT-ID');
+    expect(missing).toBeNull();
+  });
+
+  // TEST 22: Storage updateSyncStatus edge cases and removeIncident
+  test('Test 22: Storage updateSyncStatus handles missing ID, and removeIncident deletes item', async () => {
+    const updateMissing = await IncidentStorageService.updateSyncStatus('GHOST-ID', SYNC_STATUS.FAILED);
+    expect(updateMissing).toBeNull();
+
+    const localId = 'LOCAL-REMOVE-12';
+    await IncidentStorageService.saveIncident({
+      localId,
+      rangerId: 'RN-402',
+      incidentType: 'Illegal Campsite',
+      latitude: 6.33,
+      longitude: 81.51,
+      description: 'Temporary campsite removed',
+      reportedAt: new Date().toISOString(),
+      syncStatus: SYNC_STATUS.PENDING,
+      syncAttempts: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      clientReferenceId: localId,
+    });
+
+    const removeSuccess = await IncidentStorageService.removeIncident(localId);
+    expect(removeSuccess).toBe(true);
+
+    const lookup = await IncidentStorageService.getLocalIncident(localId);
+    expect(lookup).toBeNull();
+  });
+
+  // TEST 23: IncidentApi getRangerIncidents and getIncidentById
+  test('Test 23: IncidentApi getRangerIncidents and getIncidentById retrieve server records', async () => {
+    const mockList = [{ _id: 'INC-1', title: 'Snare' }];
+    (incidentApi as any).client = {
+      get: jest.fn().mockImplementation((url: string) => {
+        if (url.includes('/ranger/RN-402')) {
+          return Promise.resolve({ data: { success: true, data: mockList } });
+        }
+        if (url.includes('/INC-1')) {
+          return Promise.resolve({ data: { success: true, data: mockList[0] } });
+        }
+        return Promise.resolve({ data: { success: true, data: null } });
+      }),
+      post: jest.fn(),
+      defaults: { baseURL: '' },
+    };
+
+    const rangerIncidents = await incidentApi.getRangerIncidents('RN-402');
+    expect(rangerIncidents).toEqual(mockList);
+
+    const single = await incidentApi.getIncidentById('INC-1');
+    expect(single).toEqual(mockList[0]);
+  });
+
+  // TEST 24: IncidentApi syncBatch and config methods
+  test('Test 24: IncidentApi syncBatch dispatches items and handles token/url setters', async () => {
+    const mockPost = jest.fn().mockResolvedValue({
+      data: { success: true, synced: 1 },
+    });
+    (incidentApi as any).client = {
+      post: mockPost,
+      defaults: { baseURL: '' },
+    };
+
+    incidentApi.setAuthToken('test-token-123');
+    incidentApi.setBaseURL('http://test-server:5000');
+
+    const batch = await incidentApi.syncBatch([
+      {
+        localId: 'BATCH-1',
+        rangerId: 'RN-402',
+        rangerName: 'Ranger Bandara',
+        incidentType: 'Snare Detected',
+        latitude: 6.37,
+        longitude: 81.52,
+        description: 'Batch item description',
+        reportedAt: new Date().toISOString(),
+        syncStatus: SYNC_STATUS.PENDING,
+        syncAttempts: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        clientReferenceId: 'BATCH-1',
+      },
+    ]);
+
+    expect(batch.success).toBe(true);
+    expect(mockPost).toHaveBeenCalled();
+  });
+
+  // TEST 25: IncidentApi loginRanger online and offline fallback
+  test('Test 25: IncidentApi loginRanger succeeds online and triggers fallback offline', async () => {
+    // Online success
+    (incidentApi as any).client = {
+      post: jest.fn().mockResolvedValueOnce({
+        data: {
+          success: true,
+          data: {
+            rangerId: 'RN-402',
+            name: 'Ranger K. Bandara',
+            token: 'valid-jwt-token',
+          },
+        },
+      }),
+      defaults: { baseURL: '' },
+    };
+
+    const onlineUser = await incidentApi.loginRanger('RN-402', 'password123');
+    expect(onlineUser.rangerId).toBe('RN-402');
+    expect(onlineUser.token).toBe('valid-jwt-token');
+
+    // Offline network error fallback
+    (incidentApi as any).client = {
+      post: jest.fn().mockRejectedValueOnce({
+        code: 'ERR_NETWORK',
+        message: 'Network Error',
+      }),
+      defaults: { baseURL: '' },
+    };
+
+    const offlineUser = await incidentApi.loginRanger('ranger.bandara@ecoguard.lk', 'pass');
+    expect(offlineUser.rangerId).toBe('RN-402');
+    expect(offlineUser.name).toMatch(/Offline Mode/i);
+    expect(offlineUser.token).toBe('offline_field_token_2026');
+  });
+
+  // TEST 26: IncidentApi createIncident uploads photo if file URI provided
+  test('Test 26: IncidentApi createIncident uploads photo if local file URI exists', async () => {
+    jest.spyOn(photoService, 'uploadEvidence').mockResolvedValueOnce('https://cloud.ecoguard.lk/uploads/photo-1.jpg');
+
+    let sentPayload: any = null;
+    (incidentApi as any).client = {
+      post: jest.fn().mockImplementation((_url: string, payload: any) => {
+        sentPayload = payload;
+        return Promise.resolve({ data: { success: true, data: { incidentId: 'INC-UPLOAD-1' } } });
+      }),
+      defaults: { baseURL: '' },
+    };
+
+    const record: LocalIncidentRecord = {
+      localId: 'LOCAL-IMG-01',
+      rangerId: 'RN-402',
+      incidentType: 'Snare Detected',
+      latitude: 6.37,
+      longitude: 81.52,
+      description: 'Snare with uploaded evidence',
+      photoUri: 'file:///data/user/0/cache/photo.jpg',
+      reportedAt: new Date().toISOString(),
+      syncStatus: SYNC_STATUS.SYNCING,
+      syncAttempts: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      clientReferenceId: 'LOCAL-IMG-01',
+    };
+
+    const res = await incidentApi.createIncident(record);
+    expect(res.success).toBe(true);
+    expect(sentPayload.photoUrl).toBe('https://cloud.ecoguard.lk/uploads/photo-1.jpg');
+  });
+
+  // TEST 27: SyncService syncPendingIncidents throws error when offline
+  test('Test 27: SyncService syncPendingIncidents throws when device is offline', async () => {
+    networkService.setSimulatedOffline(true);
+
+    await expect(syncService.syncPendingIncidents()).rejects.toThrow(/Device is currently offline/i);
+  });
+
+  // TEST 28: SyncService retryFailedIncident throws when offline or record not found
+  test('Test 28: SyncService retryFailedIncident throws on offline or missing localId', async () => {
+    networkService.setSimulatedOffline(true);
+    await expect(syncService.retryFailedIncident('SOME-ID')).rejects.toThrow(/Device is offline/i);
+
+    networkService.setSimulatedOffline(false);
+    await expect(syncService.retryFailedIncident('NON-EXISTENT-LOCAL-ID')).rejects.toThrow(/not found in local storage/i);
+  });
+
+  // TEST 29: SyncService retryFailedIncident handles API failure
+  test('Test 29: SyncService retryFailedIncident marks status as FAILED when API rejects', async () => {
+    const localId = 'LOCAL-RETRY-FAIL-1';
+    await IncidentStorageService.saveIncident({
+      localId,
+      rangerId: 'RN-402',
+      incidentType: 'Snare Detected',
+      latitude: 6.37,
+      longitude: 81.52,
+      description: 'Retry failure test',
+      reportedAt: new Date().toISOString(),
+      syncStatus: SYNC_STATUS.FAILED,
+      syncAttempts: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      clientReferenceId: localId,
+    });
+
+    jest.spyOn(incidentApi, 'createIncident').mockRejectedValueOnce(new Error('Server Error 500'));
+
+    const result = await syncService.retryFailedIncident(localId);
+    expect(result?.syncStatus).toBe(SYNC_STATUS.FAILED);
+    expect(result?.lastSyncError).toMatch(/Server Error 500/i);
+  });
+
+  // TEST 30: SyncService subscription events and getters
+  test('Test 30: SyncService subscribe listener receives state, unsubscribe stops calls', () => {
+    let callCount = 0;
+    const unsubscribe = syncService.subscribe(() => {
+      callCount++;
+    });
+
+    expect(callCount).toBeGreaterThanOrEqual(1);
+    expect(syncService.getIsSyncing()).toBe(false);
+
+    unsubscribe();
+    const countAfterUnsub = callCount;
+    // Internal state query
+    expect(syncService.getLastSyncTime()).toBeDefined();
+    expect(callCount).toBe(countAfterUnsub);
+  });
+
+  // TEST 31: PhotoService takePhoto permission denied and user cancelled
+  test('Test 31: PhotoService takePhoto handles permission denial and cancellation gracefully', async () => {
+    // Permission denied
+    jest.spyOn(ImagePicker, 'requestCameraPermissionsAsync').mockResolvedValueOnce({ granted: false } as any);
+    const denied = await photoService.takePhoto();
+    expect(denied).toBeNull();
+
+    // User cancelled
+    jest.spyOn(ImagePicker, 'requestCameraPermissionsAsync').mockResolvedValueOnce({ granted: true } as any);
+    jest.spyOn(ImagePicker, 'launchCameraAsync').mockResolvedValueOnce({ canceled: true, assets: [] } as any);
+    const cancelled = await photoService.takePhoto();
+    expect(cancelled).toBeNull();
+  });
+
+  // TEST 32: PhotoService pickFromGallery permission denied and user cancelled
+  test('Test 32: PhotoService pickFromGallery handles permission denial and cancellation gracefully', async () => {
+    // Permission denied
+    jest.spyOn(ImagePicker, 'requestMediaLibraryPermissionsAsync').mockResolvedValueOnce({ granted: false } as any);
+    const denied = await photoService.pickFromGallery();
+    expect(denied).toBeNull();
+
+    // User cancelled
+    jest.spyOn(ImagePicker, 'requestMediaLibraryPermissionsAsync').mockResolvedValueOnce({ granted: true } as any);
+    jest.spyOn(ImagePicker, 'launchImageLibraryAsync').mockResolvedValueOnce({ canceled: true, assets: [] } as any);
+    const cancelled = await photoService.pickFromGallery();
+    expect(cancelled).toBeNull();
+  });
+
+  // TEST 33: PhotoService uploadEvidence success and error handling
+  test('Test 33: PhotoService uploadEvidence succeeds with valid URL and throws on server error', async () => {
+    // Success
+    jest.spyOn(FileSystem, 'uploadAsync').mockResolvedValueOnce({
+      status: 200,
+      body: JSON.stringify({ success: true, data: { photoUrl: 'https://cdn.ecoguard.lk/test.jpg' } }),
+    } as any);
+
+    const url = await photoService.uploadEvidence({ uri: 'file:///local/photo.jpg', fileName: 'test.jpg' });
+    expect(url).toBe('https://cdn.ecoguard.lk/test.jpg');
+
+    // Server HTTP 500 error
+    jest.spyOn(FileSystem, 'uploadAsync').mockResolvedValueOnce({
+      status: 500,
+      body: JSON.stringify({ error: 'Internal Error' }),
+    } as any);
+
+    await expect(
+      photoService.uploadEvidence({ uri: 'file:///local/photo.jpg' })
+    ).rejects.toThrow(/Evidence upload failed/i);
+  });
+
+  // TEST 34: LocationService with navigator.geolocation success
+  test('Test 34: LocationService retrieves position from navigator.geolocation when available', async () => {
+    const originalNavigator = (global as any).navigator;
+    (global as any).navigator = {
+      geolocation: {
+        getCurrentPosition: jest.fn((success) => {
+          success({
+            coords: {
+              latitude: 6.4567,
+              longitude: 81.6789,
+              accuracy: 10,
+            },
+          });
+        }),
+      },
+    };
+
+    const result = await locationService.getCurrentLocation();
+    expect(result.success).toBe(true);
+    expect(result.location?.latitude).toBe(6.4567);
+    expect(result.location?.longitude).toBe(81.6789);
+
+    (global as any).navigator = originalNavigator;
+  });
+
+  // TEST 35: LocationService with navigator.geolocation error codes
+  test('Test 35: LocationService handles geolocation error codes 1, 2, and 3', async () => {
+    const originalNavigator = (global as any).navigator;
+
+    // Code 1: Permission denied
+    (global as any).navigator = {
+      geolocation: {
+        getCurrentPosition: jest.fn((_success, error) => {
+          error({ code: 1, message: 'User denied' });
+        }),
+      },
+    };
+    const res1 = await locationService.getCurrentLocation();
+    expect(res1.success).toBe(false);
+    expect(res1.code).toBe('PERMISSION_DENIED');
+
+    // Code 2: Position unavailable
+    (global as any).navigator = {
+      geolocation: {
+        getCurrentPosition: jest.fn((_success, error) => {
+          error({ code: 2, message: 'Position unavailable' });
+        }),
+      },
+    };
+    const res2 = await locationService.getCurrentLocation();
+    expect(res2.success).toBe(false);
+    expect(res2.code).toBe('POSITION_UNAVAILABLE');
+
+    // Code 3: Timeout
+    (global as any).navigator = {
+      geolocation: {
+        getCurrentPosition: jest.fn((_success, error) => {
+          error({ code: 3, message: 'Timeout' });
+        }),
+      },
+    };
+    const res3 = await locationService.getCurrentLocation();
+    expect(res3.success).toBe(false);
+    expect(res3.code).toBe('TIMEOUT');
+
+    (global as any).navigator = originalNavigator;
   });
 });

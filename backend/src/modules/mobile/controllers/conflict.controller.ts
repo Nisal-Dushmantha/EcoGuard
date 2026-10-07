@@ -92,6 +92,7 @@ export const getConflictReports = async (req: Request, res: Response) => {
     const {
       status,
       reporterId,
+      assignedRangerId,
       search,
       severity,
       animal,
@@ -100,15 +101,15 @@ export const getConflictReports = async (req: Request, res: Response) => {
       limit = '50',
     } = req.query as Record<string, string>;
 
-    const filter: any = {};
+    const andConditions: any[] = [];
 
     // Status - support comma-separated list or optional 'all'
     if (status && status !== 'all' && status !== 'All') {
       const statuses = status.split(',').map((s: string) => s.trim()).filter(Boolean);
       if (statuses.length === 1) {
-        filter.status = statuses[0];
+        andConditions.push({ status: statuses[0] });
       } else if (statuses.length > 1) {
-        filter.status = { $in: statuses };
+        andConditions.push({ status: { $in: statuses } });
       }
     }
 
@@ -120,26 +121,47 @@ export const getConflictReports = async (req: Request, res: Response) => {
       if (userName) {
         conditions.push({ reporterName: userName });
       }
-      filter.$or = conditions;
+      andConditions.push({ $or: conditions });
+    }
+
+    // Assigned Ranger ID / Name filter
+    if (assignedRangerId) {
+      if (assignedRangerId === 'any') {
+        andConditions.push({ assignedRangerId: { $exists: true, $ne: '' } });
+      } else {
+        andConditions.push({
+          $or: [
+            { assignedRangerId: assignedRangerId },
+            { assignedRangerName: new RegExp(assignedRangerId, 'i') },
+            { actionTaken: new RegExp(assignedRangerId, 'i') },
+          ],
+        });
+      }
     }
 
     // Optional field filters
-    if (severity) filter.severity = severity;
-    if (animal) filter.animalSpecies = animal;
-    if (park) filter.park = park;
+    if (severity) andConditions.push({ severity });
+    if (animal) andConditions.push({ animalSpecies: animal });
+    if (park) andConditions.push({ park });
 
     // Text search
     if (search && search.trim()) {
       const regex = new RegExp(search.trim(), 'i');
-      filter.$or = [
-        { reportId: regex },
-        { locationName: regex },
-        { animalSpecies: regex },
-        { conflictType: regex },
-        { description: regex },
-        { reporterName: regex },
-      ];
+      andConditions.push({
+        $or: [
+          { reportId: regex },
+          { locationName: regex },
+          { animalSpecies: regex },
+          { conflictType: regex },
+          { description: regex },
+          { reporterName: regex },
+          { assignedRangerName: regex },
+          { officerNotes: regex },
+        ],
+      });
     }
+
+    const filter = andConditions.length > 0 ? { $and: andConditions } : {};
 
     // Sort
     let sortObj: any = { reportedAt: -1 };
@@ -325,10 +347,16 @@ export const dispatchConflictReport = async (req: Request, res: Response) => {
     let ranger = null;
     try {
       ranger = await User.findById(rangerId);
-    } catch(e) {
+    } catch (e) {
       // Invalid ObjectId format
     }
-    
+
+    if (!ranger) {
+      ranger = await User.findOne({
+        $or: [{ officerId: rangerId }, { email: rangerId }, { name: rangerId }],
+      });
+    }
+
     if (!ranger) {
       res.status(404).json({ success: false, message: 'Selected ranger not found.' });
       return;
@@ -341,12 +369,13 @@ export const dispatchConflictReport = async (req: Request, res: Response) => {
 
     // Assign report
     report.status = 'Dispatched';
-    report.assignedRangerId = rangerId;
+    report.assignedRangerId = ranger._id.toString();
+    report.assignedRangerName = ranger.name;
     report.dispatchedBy = dispatchedBy?.trim() || 'Community Liaison Officer';
     report.dispatchedAt = new Date();
     report.officerNotes = notes?.trim() || '';
     report.actionTaken = report.actionTaken || `Dispatched Ranger ${ranger.name}`;
-    
+
     await report.save();
 
     res.json({
@@ -578,5 +607,45 @@ export const uploadEvidencePhoto = async (req: Request, res: Response): Promise<
   } catch (err: any) {
     console.error('[upload-photo] ✗ Unexpected error:', err.message || err);
     res.status(500).json({ success: false, message: err?.message || 'Photo upload failed.' });
+  }
+};
+
+/**
+ * GET /api/mobile/conflicts/ranger-assigned/:rangerId?
+ * Retrieve all conflict reports assigned to a specific ranger
+ */
+export const getRangerAssignedReports = async (req: Request, res: Response) => {
+  try {
+    const rangerParam = req.params.rangerId || (req.query.rangerId as string);
+    const authUser = (req as AuthenticatedRequest).user;
+    const rangerId = rangerParam || authUser?.id || '';
+    const rangerName = (req.query.rangerName as string) || authUser?.name || '';
+
+    const orClauses: any[] = [];
+    if (rangerId && rangerId !== 'undefined' && rangerId !== 'null') {
+      orClauses.push({ assignedRangerId: rangerId });
+    }
+    if (rangerName && rangerName !== 'undefined' && rangerName !== 'null') {
+      orClauses.push({ assignedRangerName: new RegExp(rangerName, 'i') });
+      orClauses.push({ actionTaken: new RegExp(rangerName, 'i') });
+    }
+
+    // If an identifier was supplied but no matches on specific clauses, or if neither given
+    const filter = orClauses.length > 0 
+      ? { $or: orClauses } 
+      : { assignedRangerId: { $exists: true, $ne: '' } };
+
+    const reports = await CommunityReport.find(filter)
+      .sort({ dispatchedAt: -1, reportedAt: -1 })
+      .lean();
+
+    res.json({
+      success: true,
+      reports,
+      total: reports.length,
+    });
+  } catch (err: any) {
+    console.error('Error fetching ranger assigned reports:', err);
+    res.status(500).json({ success: false, message: 'Server error fetching assigned reports' });
   }
 };

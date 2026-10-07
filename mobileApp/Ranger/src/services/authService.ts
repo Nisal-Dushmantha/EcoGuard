@@ -7,6 +7,7 @@ class AuthService {
   private authToken: string | null = null;
   public userRole: string | null = null;
   public userName: string | null = null;
+  public userId: string | null = null;
 
   constructor() {
     this.client = axios.create({
@@ -25,19 +26,22 @@ class AuthService {
     });
   }
 
-  public async setAuthToken(token: string | null, role?: string | null, name?: string | null) {
+  public async setAuthToken(token: string | null, role?: string | null, name?: string | null, id?: string | null) {
     this.authToken = token;
     this.userRole = role || null;
     this.userName = name || null;
+    this.userId = id || null;
     try {
       if (token) {
         await AsyncStorage.setItem('@ecoguard_auth_token_v1', token);
         if (role) await AsyncStorage.setItem('@ecoguard_auth_role_v1', role);
         if (name) await AsyncStorage.setItem('@ecoguard_auth_name_v1', name);
+        if (id) await AsyncStorage.setItem('@ecoguard_auth_user_id_v1', id);
       } else {
         await AsyncStorage.removeItem('@ecoguard_auth_token_v1');
         await AsyncStorage.removeItem('@ecoguard_auth_role_v1');
         await AsyncStorage.removeItem('@ecoguard_auth_name_v1');
+        await AsyncStorage.removeItem('@ecoguard_auth_user_id_v1');
       }
     } catch (e) {
       console.error('Failed to save auth state to AsyncStorage', e);
@@ -49,10 +53,12 @@ class AuthService {
       const token = await AsyncStorage.getItem('@ecoguard_auth_token_v1');
       const role = await AsyncStorage.getItem('@ecoguard_auth_role_v1');
       const name = await AsyncStorage.getItem('@ecoguard_auth_name_v1');
+      const id = await AsyncStorage.getItem('@ecoguard_auth_user_id_v1');
       if (token) {
         this.authToken = token;
         this.userRole = role;
         this.userName = name;
+        this.userId = id;
         return true;
       }
     } catch (e) {
@@ -62,7 +68,7 @@ class AuthService {
   }
 
   public async logout() {
-    await this.setAuthToken(null, null);
+    await this.setAuthToken(null, null, null, null);
   }
 
   public setBaseURL(url: string) {
@@ -77,7 +83,8 @@ class AuthService {
       const response = await this.client.post('/api/webapp/auth/login', credentials);
       const data = response.data;
       if (data.token) {
-        await this.setAuthToken(data.token, data.user?.role, data.user?.name);
+        const uid = data.user?.id || data.user?._id;
+        await this.setAuthToken(data.token, data.user?.role, data.user?.name, uid);
       }
       return data;
     } catch (err: any) {

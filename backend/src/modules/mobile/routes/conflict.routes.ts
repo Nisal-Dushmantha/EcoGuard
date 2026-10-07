@@ -10,6 +10,7 @@ import {
   createConflictReport,
   getCommunityMemberDashboard,
   uploadEvidencePhoto,
+  getRangerAssignedReports,
 } from '../controllers/conflict.controller.js';
 import { authenticateToken, requireRole } from '../../../middlewares/auth.middleware.js';
 import { evidenceUpload } from '../../../middlewares/upload.middleware.js';
@@ -62,6 +63,10 @@ router.post('/reports', authenticateToken, createConflictReport);
 
 // Conflict Reports list with filters/search/sort
 router.get('/reports', getConflictReports);
+
+// Ranger assigned reports
+router.get('/ranger-assigned/:rangerId?', getRangerAssignedReports);
+router.get('/ranger-assigned', getRangerAssignedReports);
 
 // Single report details
 router.get('/reports/:reportId', getConflictReportById);

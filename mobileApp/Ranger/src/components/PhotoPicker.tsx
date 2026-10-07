@@ -59,10 +59,17 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
 
       {!loading && photoUri ? (
         <View style={styles.previewContainer}>
-          <View style={styles.imagePlaceholder}>
-            <Text style={styles.imagePlaceholderIcon}>🏞️</Text>
-            <Text style={styles.imagePlaceholderText}>Photo Evidence Attached</Text>
-            <Text style={styles.imagePlaceholderSub}>Stored securely on device</Text>
+          <View style={styles.imageWrapper}>
+            <Image
+              source={{ uri: photoUri }}
+              style={styles.previewImage}
+              resizeMode="cover"
+              accessible={true}
+              accessibilityLabel="Captured evidence preview"
+            />
+            <View style={styles.imageOverlayBadge}>
+              <Text style={styles.overlayBadgeText}>✓ Evidence Attached</Text>
+            </View>
           </View>
 
           <View style={styles.previewActions}>
@@ -209,28 +216,31 @@ const styles = StyleSheet.create({
     borderRadius: THEME.radius.md,
     overflow: 'hidden',
   },
-  imagePlaceholder: {
-    backgroundColor: '#E8F5E9',
-    paddingVertical: THEME.spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
+  imageWrapper: {
+    position: 'relative',
+    width: '100%',
+    height: 190,
     borderRadius: THEME.radius.md,
-    borderWidth: 1,
-    borderColor: '#C8E6C9',
+    overflow: 'hidden',
+    backgroundColor: '#1B2E1F',
   },
-  imagePlaceholderIcon: {
-    fontSize: 32,
-    marginBottom: 6,
+  previewImage: {
+    width: '100%',
+    height: '100%',
   },
-  imagePlaceholderText: {
-    fontSize: THEME.typography.sm,
-    fontWeight: '700',
-    color: '#2E7D32',
+  imageOverlayBadge: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    backgroundColor: 'rgba(27, 46, 31, 0.85)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: THEME.radius.sm,
   },
-  imagePlaceholderSub: {
+  overlayBadgeText: {
+    color: '#81C784',
     fontSize: THEME.typography.xs,
-    color: '#388E3C',
-    marginTop: 2,
+    fontWeight: '700',
   },
   previewActions: {
     flexDirection: 'row',

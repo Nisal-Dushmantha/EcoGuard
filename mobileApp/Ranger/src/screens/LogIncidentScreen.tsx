@@ -26,6 +26,7 @@ import { LocalIncidentRecord } from '../types/incident';
 import { SYNC_STATUS } from '../constants/syncStatus';
 import { IncidentStorageService } from '../services/incidentStorage';
 import { incidentApi } from '../services/incidentApi';
+import { authService } from '../services/authService';
 
 interface LogIncidentScreenProps {
   navigation: any;
@@ -44,9 +45,10 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ navigation
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [discardModalVisible, setDiscardModalVisible] = useState<boolean>(false);
 
-  // Automatically request GPS location on screen mount for seamless field usability
+  // Automatically request GPS location and load ranger session on screen mount for seamless field usability
   useEffect(() => {
     captureLocation();
+    authService.loadStoredAuth().catch(() => {});
   }, [captureLocation]);
 
   const hasUnsavedChanges = Boolean(
@@ -85,8 +87,8 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ navigation
 
     const record: LocalIncidentRecord = {
       localId,
-      rangerId: 'RN-402',
-      rangerName: 'Ranger K. Bandara',
+      rangerId: authService.userId || 'RN-402',
+      rangerName: authService.userName || 'Ranger K. Bandara',
       incidentType: incidentType as IncidentType,
       latitude: location!.latitude,
       longitude: location!.longitude,

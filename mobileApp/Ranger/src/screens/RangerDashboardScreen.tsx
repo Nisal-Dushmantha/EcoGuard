@@ -16,10 +16,27 @@ import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useIncidentSync } from '../hooks/useIncidentSync';
 import { IncidentStorageService } from '../services/incidentStorage';
 import { authService } from '../services/authService';
+import { conflictApi, ConflictReport } from '../services/conflictApi';
 
 interface RangerDashboardScreenProps {
   navigation: any;
 }
+
+const ANIMAL_EMOJI_MAP: Record<string, string> = {
+  'Asian Elephant': '🐘',
+  'Sri Lankan Leopard': '🐆',
+  'Wild Boar': '🐗',
+  'Sloth Bear': '🐻',
+  'Mugger Crocodile': '🐊',
+  Other: '⚠️',
+};
+
+const SEVERITY_COLOR_MAP: Record<string, { bg: string; text: string; border: string }> = {
+  Critical: { bg: '#FEE2E2', text: '#DC2626', border: '#FCA5A5' },
+  High: { bg: '#FEF2F2', text: '#EA580C', border: '#FDBA74' },
+  Medium: { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' },
+  Low: { bg: '#D1FAE5', text: '#059669', border: '#6EE7B7' },
+};
 
 export const RangerDashboardScreen: React.FC<RangerDashboardScreenProps> = ({ navigation }) => {
   const { isConnected } = useNetworkStatus();
@@ -27,19 +44,37 @@ export const RangerDashboardScreen: React.FC<RangerDashboardScreenProps> = ({ na
   const [totalIncidentsCount, setTotalIncidentsCount] = useState<number>(0);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [assignedReports, setAssignedReports] = useState<ConflictReport[]>([]);
+  const [assignedLoading, setAssignedLoading] = useState<boolean>(false);
 
   const loadDashboardData = useCallback(async () => {
     try {
       const all = await IncidentStorageService.getAllLocalIncidents();
       setTotalIncidentsCount(all.length);
       await refreshCounts();
+      
+      let fetchedUser: any = null;
       try {
         const meRes = await authService.getMe();
         if (meRes && meRes.user) {
+          fetchedUser = meRes.user;
           setUserProfile(meRes.user);
         }
       } catch {
         // Handled
+      }
+
+      // Fetch conflict reports assigned to this ranger
+      try {
+        setAssignedLoading(true);
+        const uid = authService.userId || fetchedUser?.id || fetchedUser?._id;
+        const uName = authService.userName || fetchedUser?.name;
+        const missions = await conflictApi.getRangerAssignedReports(uid, uName);
+        setAssignedReports(missions);
+      } catch (err) {
+        console.warn('Could not load assigned conflict reports:', err);
+      } finally {
+        setAssignedLoading(false);
       }
     } catch {
       // Handled
@@ -163,6 +198,137 @@ export const RangerDashboardScreen: React.FC<RangerDashboardScreenProps> = ({ na
             <Text style={styles.primaryArrow}>Start Report →</Text>
           </View>
         </TouchableOpacity>
+
+        {/* SECTION: ASSIGNED CONFLICT MISSIONS (Dispatched by CLO) */}
+        <View style={styles.sectionHeaderRow}>
+          <View style={styles.sectionHeaderTitleBox}>
+            <Text style={styles.sectionHeader}>Assigned Conflict Missions</Text>
+            {assignedReports.filter((r) => ['Dispatched', 'In Progress'].includes(r.status)).length > 0 && (
+              <View style={styles.activeMissionBadge}>
+                <Text style={styles.activeMissionBadgeText}>
+                  {assignedReports.filter((r) => ['Dispatched', 'In Progress'].includes(r.status)).length} ACTIVE
+                </Text>
+              </View>
+            )}
+          </View>
+          {assignedReports.length > 0 && (
+            <TouchableOpacity onPress={() => navigation.navigate('IncidentsTab', { initialTab: 'ASSIGNED' })}>
+              <Text style={styles.viewAllMissionsLink}>View All ({assignedReports.length}) →</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {assignedReports.length === 0 ? (
+          <View style={styles.noMissionsCard}>
+            <Text style={styles.noMissionsIcon}>🛡️</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.noMissionsTitle}>No Active Conflict Missions</Text>
+              <Text style={styles.noMissionsSub}>
+                When Community Liaison Officers dispatch you to wildlife conflicts, the mission orders will appear here immediately.
+              </Text>
+            </View>
+          </View>
+        ) : (
+          assignedReports.slice(0, 3).map((item) => {
+            const sev = SEVERITY_COLOR_MAP[item.severity] || SEVERITY_COLOR_MAP.Medium;
+            const emoji = ANIMAL_EMOJI_MAP[item.animalSpecies] || '⚠️';
+            const isDispatched = item.status === 'Dispatched';
+            const isInProgress = item.status === 'In Progress';
+            const isResolved = item.status === 'Resolved';
+
+            return (
+              <TouchableOpacity
+                key={item._id || item.reportId}
+                style={[
+                  styles.missionCard,
+                  isDispatched && styles.missionCardDispatched,
+                  isInProgress && styles.missionCardInProgress,
+                ]}
+                activeOpacity={0.88}
+                onPress={() => navigation.navigate('ActiveIncidentTracking', { reportId: item.reportId })}
+              >
+                {/* Top Row: Animal, Severity, ID */}
+                <View style={styles.missionCardTopRow}>
+                  <View style={styles.missionAnimalBox}>
+                    <Text style={styles.missionAnimalEmoji}>{emoji}</Text>
+                    <View>
+                      <Text style={styles.missionAnimalTitle}>
+                        {item.animalSpecies}
+                      </Text>
+                      <Text style={styles.missionReportId}>#{item.reportId}</Text>
+                    </View>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.severityBadge,
+                      { backgroundColor: sev.bg, borderColor: sev.border },
+                    ]}
+                  >
+                    <Text style={[styles.severityBadgeText, { color: sev.text }]}>
+                      {item.severity.toUpperCase()}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Location & Conflict Type */}
+                <View style={styles.missionDetailRow}>
+                  <Text style={styles.missionDetailIcon}>📍</Text>
+                  <Text style={styles.missionLocationText}>
+                    {item.locationName} • {item.park}
+                  </Text>
+                </View>
+
+                {/* Officer Notes / Instructions if provided */}
+                {item.officerNotes ? (
+                  <View style={styles.missionNotesBox}>
+                    <Text style={styles.missionNotesIcon}>📻</Text>
+                    <Text style={styles.missionNotesText} numberOfLines={2}>
+                      "{item.officerNotes}"
+                    </Text>
+                  </View>
+                ) : null}
+
+                {/* Footer with Status and Respond Action */}
+                <View style={styles.missionCardFooter}>
+                  <View
+                    style={[
+                      styles.statusPill,
+                      isDispatched && styles.statusPillDispatched,
+                      isInProgress && styles.statusPillInProgress,
+                      isResolved && styles.statusPillResolved,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.statusDot,
+                        isDispatched && { backgroundColor: '#F59E0B' },
+                        isInProgress && { backgroundColor: '#10B981' },
+                        isResolved && { backgroundColor: '#6B7280' },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.statusPillText,
+                        isDispatched && { color: '#B45309' },
+                        isInProgress && { color: '#047857' },
+                        isResolved && { color: '#4B5563' },
+                      ]}
+                    >
+                      {item.status.toUpperCase()}
+                    </Text>
+                  </View>
+
+                  <View style={styles.respondActionGroup}>
+                    <Text style={styles.respondActionText}>
+                      {isDispatched ? 'Respond to Scene →' : 'Track / Update →'}
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            );
+          })
+        )}
 
         {/* SECTION: SUMMARY & SECONDARY METRICS */}
         <Text style={styles.sectionHeader}>Operations Overview</Text>
@@ -554,6 +720,200 @@ const styles = StyleSheet.create({
     color: THEME.colors.textSecondary,
     flex: 1,
     lineHeight: 16,
+  },
+  // ── Assigned Conflict Missions Styles ──────────────────────────────────────
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: THEME.spacing.sm,
+    marginTop: THEME.spacing.md,
+  },
+  sectionHeaderTitleBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  activeMissionBadge: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: THEME.radius.full,
+  },
+  activeMissionBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  viewAllMissionsLink: {
+    fontSize: 12,
+    color: THEME.colors.primary,
+    fontWeight: '700',
+  },
+  noMissionsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.base,
+    borderRadius: THEME.radius.lg,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    marginBottom: THEME.spacing.base,
+    gap: 12,
+  },
+  noMissionsIcon: {
+    fontSize: 28,
+  },
+  noMissionsTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: THEME.colors.textPrimary,
+  },
+  noMissionsSub: {
+    fontSize: 12,
+    color: THEME.colors.textSecondary,
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  missionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: THEME.radius.lg,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  missionCardDispatched: {
+    borderColor: '#F59E0B',
+    backgroundColor: '#FFFDF5',
+  },
+  missionCardInProgress: {
+    borderColor: '#10B981',
+    backgroundColor: '#F7FEFA',
+  },
+  missionCardTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  missionAnimalBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  missionAnimalEmoji: {
+    fontSize: 28,
+  },
+  missionAnimalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  missionReportId: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6B7280',
+    marginTop: 1,
+  },
+  severityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  severityBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  missionDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  missionDetailIcon: {
+    fontSize: 14,
+  },
+  missionLocationText: {
+    fontSize: 13,
+    color: '#374151',
+    fontWeight: '600',
+    flex: 1,
+  },
+  missionNotesBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#F3F4F6',
+    padding: 10,
+    borderRadius: 8,
+    gap: 6,
+    marginBottom: 12,
+  },
+  missionNotesIcon: {
+    fontSize: 14,
+    marginTop: 1,
+  },
+  missionNotesText: {
+    fontSize: 12,
+    color: '#4B5563',
+    fontStyle: 'italic',
+    flex: 1,
+    lineHeight: 16,
+  },
+  missionCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingTop: 10,
+    marginTop: 2,
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    gap: 6,
+  },
+  statusPillDispatched: {
+    backgroundColor: '#FEF3C7',
+  },
+  statusPillInProgress: {
+    backgroundColor: '#D1FAE5',
+  },
+  statusPillResolved: {
+    backgroundColor: '#E5E7EB',
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statusPillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  respondActionGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  respondActionText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#1B4332',
   },
 });
 

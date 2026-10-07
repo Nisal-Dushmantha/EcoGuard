@@ -71,9 +71,13 @@ export const createIncident = async (req: Request, res: Response): Promise<void>
       return;
     }
 
+    const authUser = (req as any).user;
+    const effectiveRangerId = rangerId || authUser?.id || 'RN-402';
+    const effectiveRangerName = rangerName || authUser?.name || 'Field Ranger';
+
     const payload: CreateIncidentDTO = {
-      rangerId: rangerId || 'RN-402',
-      rangerName: rangerName || 'Field Ranger',
+      rangerId: effectiveRangerId,
+      rangerName: effectiveRangerName,
       incidentType,
       location: {
         latitude: location.latitude,
