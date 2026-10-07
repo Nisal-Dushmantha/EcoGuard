@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import { LocalIncidentRecord, RangerUser } from '../types/incident';
 import { API_BASE_URL } from '../config/apiConfig';
+import { photoService } from './photoService';
 
 class IncidentApiService {
   private client: AxiosInstance;
@@ -70,6 +71,18 @@ class IncidentApiService {
    * Submit an incident to backend (Online)
    */
   async createIncident(incident: LocalIncidentRecord): Promise<any> {
+    let remotePhotoUrl = incident.photoBase64 || incident.photoUri || '';
+    if (incident.photoUri && incident.photoUri.startsWith('file://')) {
+      try {
+        const uploadedUrl = await photoService.uploadEvidence({ uri: incident.photoUri });
+        if (uploadedUrl) {
+          remotePhotoUrl = uploadedUrl;
+        }
+      } catch (uploadErr) {
+        console.warn('[IncidentApi] Photo upload warning, sending local reference as fallback:', uploadErr);
+      }
+    }
+
     const payload = {
       rangerId: incident.rangerId,
       rangerName: incident.rangerName,
@@ -81,7 +94,7 @@ class IncidentApiService {
         addressSummary: incident.addressSummary || '',
       },
       description: incident.description,
-      photoUrl: incident.photoBase64 || incident.photoUri || '',
+      photoUrl: remotePhotoUrl,
       reportedAt: incident.reportedAt,
       syncSource: incident.syncStatus === 'SYNCED' ? 'online' : 'offline_sync',
       clientReferenceId: incident.clientReferenceId,

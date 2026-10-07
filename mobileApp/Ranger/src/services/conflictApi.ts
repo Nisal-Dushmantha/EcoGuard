@@ -21,6 +21,7 @@ export interface ConflictReport {
   verifiedBy?: string;
   verifiedAt?: string;
   assignedRangerId?: string;
+  assignedRangerName?: string;
   dispatchedBy?: string;
   dispatchedAt?: string;
   inProgressAt?: string;
@@ -41,6 +42,7 @@ export interface ConflictReportsResponse {
 export interface GetReportsParams {
   status?: string;
   reporterId?: string;
+  assignedRangerId?: string;
   search?: string;
   severity?: string;
   animal?: string;
@@ -240,6 +242,36 @@ class ConflictApiService {
         throw new Error('Network error. Unable to connect to the backend server.');
       }
       throw new Error(err.response?.data?.message || err.message || 'Error fetching rangers');
+    }
+  }
+
+  // ── Ranger Assigned Reports (Missions) ──────────────────────────────────────
+  async getRangerAssignedReports(rangerId?: string, rangerName?: string): Promise<ConflictReport[]> {
+    try {
+      const url = rangerId ? `/api/mobile/conflicts/ranger-assigned/${rangerId}` : `/api/mobile/conflicts/ranger-assigned`;
+      const response = await this.client.get(url, {
+        params: { rangerName },
+      });
+      if (response.data?.success && response.data.reports) {
+        return response.data.reports;
+      }
+      // Fallback: general query
+      const fallback = await this.getConflictReports({
+        assignedRangerId: rangerId || 'any',
+        status: 'all',
+      });
+      return fallback.reports;
+    } catch (err: any) {
+      console.warn('Failed to fetch ranger-assigned endpoint, falling back to query:', err.message);
+      try {
+        const fallback = await this.getConflictReports({
+          assignedRangerId: rangerId || 'any',
+          status: 'all',
+        });
+        return fallback.reports;
+      } catch {
+        return [];
+      }
     }
   }
 }

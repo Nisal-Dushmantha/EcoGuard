@@ -42,6 +42,7 @@ export interface ICommunityReport extends Document {
   verifiedBy?: string;
   verifiedAt?: Date;
   assignedRangerId?: string;
+  assignedRangerName?: string;
   dispatchedAt?: Date;
   dispatchedBy?: string;
   inProgressAt?: Date;
@@ -160,6 +161,10 @@ const CommunityReportSchema = new Schema<ICommunityReport>(
       type: Date,
     },
     assignedRangerId: {
+      type: String,
+      default: '',
+    },
+    assignedRangerName: {
       type: String,
       default: '',
     },

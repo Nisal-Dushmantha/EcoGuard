@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { THEME } from '../constants/theme';
@@ -228,13 +229,18 @@ export const IncidentDetailsScreen: React.FC<IncidentDetailsScreenProps> = ({
 
           {incident.photoUri || incident.photoBase64 ? (
             <View style={styles.photoContainer}>
-              <View style={styles.photoPlaceholder}>
-                <Text style={styles.photoPlaceholderIcon}>🏞️</Text>
-                <Text style={styles.photoPlaceholderText}>Photo Evidence Recorded</Text>
-                <Text style={styles.photoPlaceholderSub}>
+              <Image
+                source={{ uri: incident.photoUri || incident.photoBase64 }}
+                style={styles.detailPhotoEvidence}
+                resizeMode="cover"
+                accessible={true}
+                accessibilityLabel="Incident photographic evidence"
+              />
+              <View style={styles.photoEvidenceMeta}>
+                <Text style={styles.photoEvidenceCaption}>
                   {incident.syncStatus === SYNC_STATUS.SYNCED
-                    ? 'Uploaded to Cloud Database'
-                    : 'Stored securely in device cache'}
+                    ? '✓ Synchronized with EcoGuard Central Cloud'
+                    : '⏳ Stored securely in field device cache'}
                 </Text>
               </View>
             </View>
@@ -453,29 +459,24 @@ const styles = StyleSheet.create({
   photoContainer: {
     borderRadius: THEME.radius.md,
     overflow: 'hidden',
-  },
-  photoPlaceholder: {
-    backgroundColor: '#E8F5E9',
-    paddingVertical: THEME.spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: THEME.radius.md,
     borderWidth: 1,
-    borderColor: '#C8E6C9',
+    borderColor: THEME.colors.borderLight,
+    backgroundColor: '#1B2E1F',
   },
-  photoPlaceholderIcon: {
-    fontSize: 36,
-    marginBottom: 6,
+  detailPhotoEvidence: {
+    width: '100%',
+    height: 220,
   },
-  photoPlaceholderText: {
-    fontSize: THEME.typography.sm,
-    fontWeight: '700',
-    color: '#2E7D32',
+  photoEvidenceMeta: {
+    backgroundColor: '#F3FAF5',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
-  photoPlaceholderSub: {
+  photoEvidenceCaption: {
     fontSize: THEME.typography.xs,
-    color: '#388E3C',
-    marginTop: 2,
+    color: '#2E7D32',
+    fontWeight: '600',
+    textAlign: 'center',
   },
   noPhotoText: {
     fontSize: THEME.typography.xs,

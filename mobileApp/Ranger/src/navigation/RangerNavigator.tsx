@@ -238,7 +238,7 @@ export const RangerNavigator: React.FC = () => {
       case 'SyncStatus':
         return <SyncStatusScreen navigation={navigation} />;
       case 'MyIncidents':
-        return <MyIncidentsScreen navigation={navigation} />;
+        return <MyIncidentsScreen navigation={navigation} route={{ params: screenParams }} />;
       case 'Alerts':
         return <AlertsScreen navigation={navigation} />;
       case 'RangerHome':
