@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { THEME } from '../constants/theme';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
@@ -16,7 +15,7 @@ import { ConflictOperationsHome } from '../screens/ConflictOperationsHome';
 import { PendingReportsScreen } from '../screens/PendingReportsScreen';
 import { ConflictReportDetailsScreen } from '../screens/ConflictReportDetailsScreen';
 import { VerifyConfirmScreen } from '../screens/VerifyConfirmScreen';
-import { AvailableRangerSelection } from '../screens/AvailableRangerSelection'; // force reparse
+import { AvailableRangerSelection } from '../screens/AvailableRangerSelection';
 import { ConfirmAssignmentScreen } from '../screens/ConfirmAssignmentScreen';
 import { DispatchSuccessScreen } from '../screens/DispatchSuccessScreen';
 import { ConflictActivityScreen } from '../screens/ConflictActivityScreen';
@@ -26,36 +25,53 @@ import { CommunityMemberDashboard } from '../screens/CommunityMemberDashboard';
 import { ReportWildlifeConflictScreen } from '../screens/ReportWildlifeConflictScreen';
 import { ReportSubmittedSuccessScreen } from '../screens/ReportSubmittedSuccessScreen';
 import { CommunityMemberReportsScreen } from '../screens/CommunityMemberReportsScreen';
-import { LocalIncidentRecord } from '../types/incident';
 import { authService } from '../services/authService';
 
-// Navigation state container supporting standalone and React Navigation environments
 export const RangerNavigator: React.FC = () => {
-  const [currentScreen, setCurrentScreen] = useState<string>('Splash'); // Default to splash
-  const [activeTab, setActiveTab] = useState<'Home' | 'Incidents' | 'Alerts' | 'Profile'>('Home');
+  const [currentScreen, setCurrentScreen] = useState<string>('Splash');
   const [screenParams, setScreenParams] = useState<any>({});
   const [screenHistory, setScreenHistory] = useState<string[]>(['Splash']);
+
+  const getNormalizedRole = (): 'COMMUNITY_MEMBER' | 'COMMUNITY_LIAISON_OFFICER' | 'RANGER' => {
+    const raw = (authService.userRole || '').trim().toUpperCase().replace(/\s+/g, '_');
+    if (raw === 'COMMUNITY_MEMBER') return 'COMMUNITY_MEMBER';
+    if (raw === 'COMMUNITY_LIAISON_OFFICER') return 'COMMUNITY_LIAISON_OFFICER';
+    return 'RANGER';
+  };
+
+  const getRoleProfileScreen = () => {
+    const role = getNormalizedRole();
+    if (role === 'COMMUNITY_MEMBER') return 'CommunityMemberProfile';
+    if (role === 'COMMUNITY_LIAISON_OFFICER') return 'LiaisonOfficerProfile';
+    return 'RangerProfile';
+  };
 
   // Navigation controller passed to screens
   const navigation = {
     navigate: (screen: string, params?: any) => {
       if (params) setScreenParams(params);
+
       if (screen === 'HomeTab') {
-        setActiveTab('Home');
-        const r = authService.userRole?.trim().toUpperCase().replace(/\s+/g, '_');
-        if (r === 'COMMUNITY_MEMBER') setCurrentScreen('CommunityMemberDashboard');
-        else if (r === 'COMMUNITY_LIAISON_OFFICER') setCurrentScreen('ConflictOperationsHome');
-        else setCurrentScreen('RangerDashboard');
-      } else if (screen === 'IncidentsTab') {
-        setActiveTab('Incidents');
-        setCurrentScreen('MyIncidents');
-      } else if (screen === 'AlertsTab') {
-        setActiveTab('Alerts');
-        setCurrentScreen('Alerts');
-      } else if (screen === 'ProfileTab' || screen === 'OfficerProfile') {
-        setActiveTab('Profile');
-        setScreenHistory((prev) => [...prev, 'OfficerProfile']);
-        setCurrentScreen('OfficerProfile');
+        const role = getNormalizedRole();
+        const target =
+          role === 'COMMUNITY_MEMBER'
+            ? 'CommunityMemberDashboard'
+            : role === 'COMMUNITY_LIAISON_OFFICER'
+            ? 'ConflictOperationsHome'
+            : 'RangerDashboard';
+        setScreenHistory((prev) => [...prev, target]);
+        setCurrentScreen(target);
+      } else if (
+        screen === 'ProfileTab' ||
+        screen === 'Profile' ||
+        screen === 'OfficerProfile' ||
+        screen === 'CommunityMemberProfile' ||
+        screen === 'LiaisonOfficerProfile' ||
+        screen === 'RangerProfile'
+      ) {
+        const target = getRoleProfileScreen();
+        setScreenHistory((prev) => [...prev, target]);
+        setCurrentScreen(target);
       } else {
         setScreenHistory((prev) => [...prev, screen]);
         setCurrentScreen(screen);
@@ -63,6 +79,7 @@ export const RangerNavigator: React.FC = () => {
     },
     replace: (screen: string, params?: any) => {
       if (params) setScreenParams(params);
+
       if (
         screen === 'RangerMainTabs' ||
         screen === 'RangerHome' ||
@@ -70,13 +87,28 @@ export const RangerNavigator: React.FC = () => {
         screen === 'ConflictOperationsHome' ||
         screen === 'CommunityMemberDashboard'
       ) {
-        setActiveTab('Home');
-        const targetScreen =
-          screen === 'RangerMainTabs' || screen === 'RangerHome'
-            ? 'RangerDashboard'
-            : screen;
+        let targetScreen = screen;
+        if (screen === 'RangerMainTabs' || screen === 'RangerHome') {
+          const role = getNormalizedRole();
+          targetScreen =
+            role === 'COMMUNITY_MEMBER'
+              ? 'CommunityMemberDashboard'
+              : role === 'COMMUNITY_LIAISON_OFFICER'
+              ? 'ConflictOperationsHome'
+              : 'RangerDashboard';
+        }
         setCurrentScreen(targetScreen);
         setScreenHistory([targetScreen]);
+      } else if (
+        screen === 'Profile' ||
+        screen === 'OfficerProfile' ||
+        screen === 'CommunityMemberProfile' ||
+        screen === 'LiaisonOfficerProfile' ||
+        screen === 'RangerProfile'
+      ) {
+        const target = getRoleProfileScreen();
+        setCurrentScreen(target);
+        setScreenHistory([target]);
       } else {
         setCurrentScreen(screen);
       }
@@ -89,15 +121,15 @@ export const RangerNavigator: React.FC = () => {
         setScreenHistory(newHistory);
         setCurrentScreen(prev);
       } else {
-        const r = authService.userRole?.trim().toUpperCase().replace(/\s+/g, '_');
-        if (r === 'COMMUNITY_MEMBER') {
-          setCurrentScreen('CommunityMemberDashboard');
-        } else if (r === 'COMMUNITY_LIAISON_OFFICER') {
-          setCurrentScreen('ConflictOperationsHome');
-        } else {
-          setCurrentScreen('RangerDashboard');
-        }
-        setActiveTab('Home');
+        const role = getNormalizedRole();
+        const fallback =
+          role === 'COMMUNITY_MEMBER'
+            ? 'CommunityMemberDashboard'
+            : role === 'COMMUNITY_LIAISON_OFFICER'
+            ? 'ConflictOperationsHome'
+            : 'RangerDashboard';
+        setCurrentScreen(fallback);
+        setScreenHistory([fallback]);
       }
     },
     addListener: (_event: string, callback: () => void) => {
@@ -105,16 +137,6 @@ export const RangerNavigator: React.FC = () => {
       return () => {};
     },
   };
-
-  // Determine whether bottom tabs should be visible on the current screen
-  const isTabScreen = [
-    'RangerDashboard',
-    'RangerHome',
-    'RangerMainTabs',
-    'MyIncidents',
-    'Alerts',
-    'OfficerProfile',
-  ].includes(currentScreen);
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -206,8 +228,13 @@ export const RangerNavigator: React.FC = () => {
         );
       case 'ConflictActivity':
         return <ConflictActivityScreen navigation={navigation} />;
+      case 'CommunityMemberProfile':
+        return <OfficerProfileScreen navigation={navigation} mode="community-member" />;
+      case 'LiaisonOfficerProfile':
+        return <OfficerProfileScreen navigation={navigation} mode="liaison-officer" />;
+      case 'RangerProfile':
       case 'OfficerProfile':
-        return <OfficerProfileScreen navigation={navigation} />;
+        return <OfficerProfileScreen navigation={navigation} mode="ranger" />;
       case 'SyncStatus':
         return <SyncStatusScreen navigation={navigation} />;
       case 'MyIncidents':
@@ -223,96 +250,312 @@ export const RangerNavigator: React.FC = () => {
     }
   };
 
+  const userRole = getNormalizedRole();
+
+  const isCommunityMemberTabScreen =
+    userRole === 'COMMUNITY_MEMBER' &&
+    ['CommunityMemberDashboard', 'CommunityMemberReports', 'CommunityMemberProfile'].includes(
+      currentScreen
+    );
+
+  const isLiaisonOfficerTabScreen =
+    userRole === 'COMMUNITY_LIAISON_OFFICER' &&
+    ['ConflictOperationsHome', 'PendingReports', 'ConflictActivity', 'LiaisonOfficerProfile'].includes(
+      currentScreen
+    );
+
+  const isRangerTabScreen =
+    userRole === 'RANGER' &&
+    [
+      'RangerDashboard',
+      'RangerHome',
+      'RangerMainTabs',
+      'MyIncidents',
+      'Alerts',
+      'RangerProfile',
+      'OfficerProfile',
+    ].includes(currentScreen);
+
   return (
     <View style={styles.container}>
       <View style={styles.screenArea}>{renderScreen()}</View>
 
-      {/* BOTTOM TAB NAVIGATION */}
-      {isTabScreen ? (
+      {/* COMMUNITY MEMBER ROLE BOTTOM TAB BAR */}
+      {isCommunityMemberTabScreen && (
         <View style={styles.bottomTabBar}>
-          {/* Home Tab */}
           <TouchableOpacity
             style={styles.tabItem}
-            onPress={() => {
-              setActiveTab('Home');
-              setCurrentScreen('RangerDashboard');
-            }}
-            accessible={true}
-            accessibilityRole="tab"
-            accessibilityLabel="Home tab"
-            accessibilityState={{ selected: activeTab === 'Home' }}
+            onPress={() => navigation.navigate('CommunityMemberDashboard')}
           >
-            <Text style={[styles.tabIcon, activeTab === 'Home' && styles.tabIconActive]}>🏠</Text>
-            <Text style={[styles.tabLabel, activeTab === 'Home' && styles.tabLabelActive]}>Home</Text>
+            <Text
+              style={[
+                styles.tabIcon,
+                currentScreen === 'CommunityMemberDashboard' && styles.tabIconActive,
+              ]}
+            >
+              🏠
+            </Text>
+            <Text
+              style={[
+                styles.tabLabel,
+                currentScreen === 'CommunityMemberDashboard' && styles.tabLabelActive,
+              ]}
+            >
+              Home
+            </Text>
           </TouchableOpacity>
 
-          {/* Quick Center Action: Log Incident */}
+          <TouchableOpacity
+            style={styles.tabItem}
+            onPress={() => navigation.navigate('CommunityMemberReports')}
+          >
+            <Text
+              style={[
+                styles.tabIcon,
+                currentScreen === 'CommunityMemberReports' && styles.tabIconActive,
+              ]}
+            >
+              📋
+            </Text>
+            <Text
+              style={[
+                styles.tabLabel,
+                currentScreen === 'CommunityMemberReports' && styles.tabLabelActive,
+              ]}
+            >
+              My Reports
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.centerFab}
+            onPress={() => navigation.navigate('ReportWildlifeConflict')}
+            activeOpacity={0.88}
+          >
+            <Text style={styles.centerFabIcon}>＋</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.tabItem}
+            onPress={() => navigation.navigate('CommunityMemberProfile')}
+          >
+            <Text
+              style={[
+                styles.tabIcon,
+                currentScreen === 'CommunityMemberProfile' && styles.tabIconActive,
+              ]}
+            >
+              👤
+            </Text>
+            <Text
+              style={[
+                styles.tabLabel,
+                currentScreen === 'CommunityMemberProfile' && styles.tabLabelActive,
+              ]}
+            >
+              Profile
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* COMMUNITY LIAISON OFFICER ROLE BOTTOM TAB BAR */}
+      {isLiaisonOfficerTabScreen && (
+        <View style={styles.bottomTabBar}>
+          <TouchableOpacity
+            style={styles.tabItem}
+            onPress={() => navigation.navigate('ConflictOperationsHome')}
+          >
+            <Text
+              style={[
+                styles.tabIcon,
+                currentScreen === 'ConflictOperationsHome' && styles.tabIconActive,
+              ]}
+            >
+              🛡️
+            </Text>
+            <Text
+              style={[
+                styles.tabLabel,
+                currentScreen === 'ConflictOperationsHome' && styles.tabLabelActive,
+              ]}
+            >
+              Operations
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.tabItem}
+            onPress={() => navigation.navigate('PendingReports')}
+          >
+            <Text
+              style={[
+                styles.tabIcon,
+                currentScreen === 'PendingReports' && styles.tabIconActive,
+              ]}
+            >
+              📋
+            </Text>
+            <Text
+              style={[
+                styles.tabLabel,
+                currentScreen === 'PendingReports' && styles.tabLabelActive,
+              ]}
+            >
+              Reports
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.tabItem}
+            onPress={() => navigation.navigate('ConflictActivity')}
+          >
+            <Text
+              style={[
+                styles.tabIcon,
+                currentScreen === 'ConflictActivity' && styles.tabIconActive,
+              ]}
+            >
+              🕒
+            </Text>
+            <Text
+              style={[
+                styles.tabLabel,
+                currentScreen === 'ConflictActivity' && styles.tabLabelActive,
+              ]}
+            >
+              Activity
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.tabItem}
+            onPress={() => navigation.navigate('LiaisonOfficerProfile')}
+          >
+            <Text
+              style={[
+                styles.tabIcon,
+                currentScreen === 'LiaisonOfficerProfile' && styles.tabIconActive,
+              ]}
+            >
+              👤
+            </Text>
+            <Text
+              style={[
+                styles.tabLabel,
+                currentScreen === 'LiaisonOfficerProfile' && styles.tabLabelActive,
+              ]}
+            >
+              Profile
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* RANGER ROLE BOTTOM TAB BAR */}
+      {isRangerTabScreen && (
+        <View style={styles.bottomTabBar}>
+          <TouchableOpacity
+            style={styles.tabItem}
+            onPress={() => navigation.navigate('RangerDashboard')}
+          >
+            <Text
+              style={[
+                styles.tabIcon,
+                ['RangerDashboard', 'RangerHome', 'RangerMainTabs'].includes(currentScreen) &&
+                  styles.tabIconActive,
+              ]}
+            >
+              🏠
+            </Text>
+            <Text
+              style={[
+                styles.tabLabel,
+                ['RangerDashboard', 'RangerHome', 'RangerMainTabs'].includes(currentScreen) &&
+                  styles.tabLabelActive,
+              ]}
+            >
+              Home
+            </Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.centerFab}
             onPress={() => navigation.navigate('LogIncident')}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel="Quick action: Log Incident"
             activeOpacity={0.85}
           >
             <Text style={styles.centerFabIcon}>＋</Text>
           </TouchableOpacity>
 
-          {/* Incidents Tab */}
           <TouchableOpacity
             style={styles.tabItem}
-            onPress={() => {
-              setActiveTab('Incidents');
-              setCurrentScreen('MyIncidents');
-            }}
-            accessible={true}
-            accessibilityRole="tab"
-            accessibilityLabel="My Incidents tab"
-            accessibilityState={{ selected: activeTab === 'Incidents' }}
+            onPress={() => navigation.navigate('MyIncidents')}
           >
-            <Text style={[styles.tabIcon, activeTab === 'Incidents' && styles.tabIconActive]}>📋</Text>
-            <Text style={[styles.tabLabel, activeTab === 'Incidents' && styles.tabLabelActive]}>
+            <Text
+              style={[
+                styles.tabIcon,
+                currentScreen === 'MyIncidents' && styles.tabIconActive,
+              ]}
+            >
+              📋
+            </Text>
+            <Text
+              style={[
+                styles.tabLabel,
+                currentScreen === 'MyIncidents' && styles.tabLabelActive,
+              ]}
+            >
               Incidents
             </Text>
           </TouchableOpacity>
 
-          {/* Alerts Tab */}
           <TouchableOpacity
             style={styles.tabItem}
-            onPress={() => {
-              setActiveTab('Alerts');
-              setCurrentScreen('Alerts');
-            }}
-            accessible={true}
-            accessibilityRole="tab"
-            accessibilityLabel="Alerts tab"
-            accessibilityState={{ selected: activeTab === 'Alerts' }}
+            onPress={() => navigation.navigate('Alerts')}
           >
-            <Text style={[styles.tabIcon, activeTab === 'Alerts' && styles.tabIconActive]}>🔔</Text>
-            <Text style={[styles.tabLabel, activeTab === 'Alerts' && styles.tabLabelActive]}>
+            <Text
+              style={[
+                styles.tabIcon,
+                currentScreen === 'Alerts' && styles.tabIconActive,
+              ]}
+            >
+              🔔
+            </Text>
+            <Text
+              style={[
+                styles.tabLabel,
+                currentScreen === 'Alerts' && styles.tabLabelActive,
+              ]}
+            >
               Alerts
             </Text>
           </TouchableOpacity>
 
-          {/* Profile Tab */}
           <TouchableOpacity
             style={styles.tabItem}
-            onPress={() => {
-              setActiveTab('Profile');
-              setCurrentScreen('OfficerProfile');
-            }}
-            accessible={true}
-            accessibilityRole="tab"
-            accessibilityLabel="Profile tab"
-            accessibilityState={{ selected: activeTab === 'Profile' }}
+            onPress={() => navigation.navigate('RangerProfile')}
           >
-            <Text style={[styles.tabIcon, activeTab === 'Profile' && styles.tabIconActive]}>👤</Text>
-            <Text style={[styles.tabLabel, activeTab === 'Profile' && styles.tabLabelActive]}>
+            <Text
+              style={[
+                styles.tabIcon,
+                ['RangerProfile', 'OfficerProfile'].includes(currentScreen) &&
+                  styles.tabIconActive,
+              ]}
+            >
+              👤
+            </Text>
+            <Text
+              style={[
+                styles.tabLabel,
+                ['RangerProfile', 'OfficerProfile'].includes(currentScreen) &&
+                  styles.tabLabelActive,
+              ]}
+            >
               Profile
             </Text>
           </TouchableOpacity>
         </View>
-      ) : null}
+      )}
     </View>
   );
 };
@@ -389,3 +632,4 @@ const styles = StyleSheet.create({
 });
 
 export default RangerNavigator;
+

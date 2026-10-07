@@ -17,9 +17,10 @@ import { authService } from '../services/authService';
 
 interface OfficerProfileScreenProps {
   navigation: any;
+  mode?: 'community-member' | 'liaison-officer' | 'ranger';
 }
 
-export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navigation }) => {
+export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navigation, mode }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -67,11 +68,30 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
     loadProfile();
   }, [loadProfile]);
 
+  // Determine role dynamically
+  const rawRole = (mode || profile?.role || authService.userRole || '').toString();
+  const normalizedRole = rawRole.trim().toUpperCase().replace(/\s+/g, '_');
+  const isCommunityMember = normalizedRole === 'COMMUNITY_MEMBER';
+  const isLiaisonOfficer = normalizedRole === 'COMMUNITY_LIAISON_OFFICER';
+  const isRanger = !isCommunityMember && !isLiaisonOfficer;
+
+  const screenTitle = isCommunityMember
+    ? 'Community Member Profile'
+    : isLiaisonOfficer
+    ? 'Liaison Officer Profile'
+    : 'Ranger Profile';
+
+  const displayRole = isCommunityMember
+    ? 'Community Member'
+    : isLiaisonOfficer
+    ? 'Community Liaison Officer'
+    : profile?.role || 'Ranger Officer';
+
   // Real Logout Flow
   const handleLogout = async () => {
     Alert.alert(
       'Confirm Logout',
-      'Are you sure you want to log out from the field console? Your local session token will be invalidated.',
+      'Are you sure you want to log out? Your local session token will be invalidated.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -163,7 +183,7 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
     return (
       <SafeAreaView style={styles.centerBox}>
         <ActivityIndicator size="large" color="#1B4332" />
-        <Text style={styles.loadingText}>Loading Ranger profile…</Text>
+        <Text style={styles.loadingText}>Loading {screenTitle.toLowerCase()}…</Text>
       </SafeAreaView>
     );
   }
@@ -179,12 +199,6 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
     );
   }
 
-  // Format user role for display
-  const displayRole =
-    profile.role === 'COMMUNITY_LIAISON_OFFICER' || profile.role === 'Community Liaison Officer'
-      ? 'Community Liaison Officer'
-      : profile.role || 'Ranger';
-
   // Format officer initials
   const initials = profile.name
     ? profile.name
@@ -194,6 +208,10 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
         .join('')
         .substring(0, 2)
         .toUpperCase()
+    : isCommunityMember
+    ? 'CM'
+    : isLiaisonOfficer
+    ? 'CO'
     : 'RN';
 
   const officerIdDisplay = profile.officerId || profile.id || profile._id || 'Not assigned';
@@ -208,8 +226,10 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
           <Text style={styles.backBtnText}>←</Text>
         </TouchableOpacity>
         <View style={styles.headerTitleBox}>
-          <Text style={styles.headerTitle}>Ranger Profile</Text>
-          <Text style={styles.headerSubtitle}>FIELD OPERATIONS CONSOLE</Text>
+          <Text style={styles.headerTitle}>{screenTitle}</Text>
+          <Text style={styles.headerSubtitle}>
+            {isCommunityMember ? 'COMMUNITY MEMBER PORTAL' : 'FIELD OPERATIONS CONSOLE'}
+          </Text>
         </View>
         <TouchableOpacity style={styles.settingsBtn} onPress={() => setShowEditModal(true)}>
           <Text style={styles.settingsIcon}>⚙️</Text>
@@ -223,9 +243,17 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
             <Text style={styles.govLogoIcon}>🛡️</Text>
           </View>
           <View style={styles.govTextGroup}>
-            <Text style={styles.govTitleSmall}>DEMOCRATIC SOCIALIST REPUBLIC</Text>
-            <Text style={styles.govTitleLarge}>Dept. of Wildlife Conservation</Text>
-            <Text style={styles.govTitleSub}>Field Command & Rapid Liaison Force</Text>
+            <Text style={styles.govTitleSmall}>
+              {isCommunityMember ? 'ECOGUARD COMMUNITY PORTAL' : 'DEMOCRATIC SOCIALIST REPUBLIC'}
+            </Text>
+            <Text style={styles.govTitleLarge}>
+              {isCommunityMember ? 'Wildlife Protection Grid' : 'Dept. of Wildlife Conservation'}
+            </Text>
+            <Text style={styles.govTitleSub}>
+              {isCommunityMember
+                ? 'Community Incident & Rapid Alert Network'
+                : 'Field Command & Rapid Liaison Force'}
+            </Text>
           </View>
         </View>
 
@@ -243,14 +271,24 @@ export const OfficerProfileScreen: React.FC<OfficerProfileScreenProps> = ({ navi
               </View>
               <Text style={styles.profileRole}>{displayRole}</Text>
               <View style={styles.clearanceBadge}>
-                <Text style={styles.clearanceText}>🔒 Tier 4 Clearance — Authenticated</Text>
+                <Text style={styles.clearanceText}>
+                  {isCommunityMember
+                    ? '🔒 Community Member — Authenticated'
+                    : isLiaisonOfficer
+                    ? '🔒 Liaison Officer — Authenticated'
+                    : '🔒 Tier 4 Clearance — Authenticated'}
+                </Text>
               </View>
             </View>
           </View>
 
           <View style={styles.deptRow}>
             <Text style={styles.deptIcon}>🏛️</Text>
-            <Text style={styles.deptText}>Department of Wildlife Conservation & Field Operations.</Text>
+            <Text style={styles.deptText}>
+              {isCommunityMember
+                ? 'EcoGuard Community Portal for Wildlife Conservation & Conflict Reporting.'
+                : 'Department of Wildlife Conservation & Field Operations.'}
+            </Text>
           </View>
 
           {/* ── Duty Status Toggle Switch ── */}

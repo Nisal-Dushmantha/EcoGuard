@@ -162,7 +162,7 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.avatarCircle}
-            onPress={() => navigation.navigate('OfficerProfile')}
+            onPress={() => navigation.navigate('LiaisonOfficerProfile')}
           >
             <Text style={styles.avatarText}>
               {officerName ? officerName.substring(0, 2).toUpperCase() : 'CO'}
@@ -390,30 +390,6 @@ export const ConflictOperationsHome: React.FC<ConflictOperationsHomeProps> = ({ 
           <View style={{ height: 24 }} />
         </ScrollView>
       )}
-
-      {/* ── 7. Bottom Navigation Bar (Matches Reports & Activity) ───────── */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItemActive}>
-          <Text style={styles.navIconActive}>🛡</Text>
-          <Text style={styles.navLabelActive}>Operations</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('PendingReports')}
-        >
-          <Text style={styles.navIcon}>📋</Text>
-          <Text style={styles.navLabel}>Reports</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('ConflictActivity')}
-        >
-          <Text style={styles.navIcon}>🕒</Text>
-          <Text style={styles.navLabel}>Activity</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };
