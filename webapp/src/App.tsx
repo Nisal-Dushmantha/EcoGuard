@@ -16,7 +16,19 @@ function MainApplication() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   const [view, setView] = useState<WorkspaceView>('monitoring');
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    const saved = localStorage.getItem('ecoguard_nav_collapsed');
+    // Default to collapsed (true) on visit as requested, unless explicitly opened
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  const handleToggleNavbar = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('ecoguard_nav_collapsed', String(next));
+      return next;
+    });
+  };
 
   if (isLoading) {
     return (
@@ -44,7 +56,7 @@ function MainApplication() {
         activeTab={view}
         onSelectTab={setView}
         collapsed={collapsed}
-        onToggle={() => setCollapsed(!collapsed)}
+        onToggle={handleToggleNavbar}
       />
       <div className="workspace-body">
         <header className="command-bar no-print">
