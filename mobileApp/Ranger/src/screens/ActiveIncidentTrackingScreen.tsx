@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { conflictApi, ConflictReport } from '../services/conflictApi';
+import { authService } from '../services/authService';
 
 interface ActiveIncidentTrackingScreenProps {
   route: any;
@@ -60,9 +61,13 @@ export const ActiveIncidentTrackingScreen: React.FC<ActiveIncidentTrackingScreen
 
   const handleUpdateStatus = async () => {
     if (!report || !newStatus) return;
+    if (newStatus === 'Resolved' && !updateNote.trim()) {
+      alert('Resolution notes are required to resolve a conflict report.');
+      return;
+    }
     setUpdateLoading(true);
     try {
-      await conflictApi.updateConflictStatus(report.reportId, newStatus, updateNote);
+      await conflictApi.updateConflictStatus(report.reportId, newStatus, updateNote.trim());
       setModalVisible(false);
       setNewStatus('');
       setUpdateNote('');
@@ -74,12 +79,15 @@ export const ActiveIncidentTrackingScreen: React.FC<ActiveIncidentTrackingScreen
     }
   };
 
-  const openUpdateModal = () => {
+  const openUpdateModal = (statusTarget?: string) => {
     if (!report) return;
-    // Determine next logical status
-    if (report.status === 'Dispatched') setNewStatus('In Progress');
-    else if (report.status === 'In Progress') setNewStatus('Resolved');
-    else setNewStatus('');
+    if (statusTarget) {
+      setNewStatus(statusTarget);
+    } else {
+      if (report.status === 'Dispatched') setNewStatus('In Progress');
+      else if (report.status === 'In Progress') setNewStatus('Resolved');
+      else setNewStatus('');
+    }
     setUpdateNote('');
     setModalVisible(true);
   };
@@ -210,7 +218,7 @@ export const ActiveIncidentTrackingScreen: React.FC<ActiveIncidentTrackingScreen
                   <Text style={styles.timelineTime}>{isAssigned ? `✓ ${formatTime(report.dispatchedAt)}` : 'Pending'}</Text>
                 </View>
                 <Text style={styles.timelineSub}>
-                  {isAssigned ? `Assigned to Ranger ID: ${report.assignedRangerId}` : 'Awaiting assignment'}
+                  {isAssigned ? `Assigned to Ranger: ${report.assignedRangerName || report.assignedRangerId}` : 'Awaiting assignment'}
                 </Text>
               </View>
             </View>
@@ -287,7 +295,7 @@ export const ActiveIncidentTrackingScreen: React.FC<ActiveIncidentTrackingScreen
               <Text style={styles.responderAvatarText}>RN</Text>
             </View>
             <View style={styles.responderDetails}>
-              <Text style={styles.responderName}>Ranger ID: {report.assignedRangerId || 'Unassigned'}</Text>
+              <Text style={styles.responderName}>{report.assignedRangerName || `Ranger ID: ${report.assignedRangerId || 'Unassigned'}`}</Text>
               <Text style={styles.responderSub}>Rapid Response Unit</Text>
             </View>
           </View>
@@ -349,32 +357,85 @@ export const ActiveIncidentTrackingScreen: React.FC<ActiveIncidentTrackingScreen
         </View>
       </ScrollView>
 
-      {/* BOTTOM ACTIONS */}
+      {/* BOTTOM ACTIONS (Role Guarded: Only Ranger gets interactive resolution controls) */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.updateLogBtn} onPress={openUpdateModal}>
-          <Text style={styles.updateLogIcon}>✏️</Text>
-          <Text style={styles.updateLogText}>UPDATE INCIDENT{'\n'}LOG</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.radioBtn}>
-          <Text style={styles.radioBtnIcon}>📻</Text>
-          <Text style={styles.radioBtnText}>RADIO DISPATCH{'\n'}COMMS</Text>
-        </TouchableOpacity>
+        {authService.userRole === 'Ranger' ? (
+          report.status === 'Dispatched' ? (
+            <TouchableOpacity
+              style={[styles.updateLogBtn, { backgroundColor: '#10B981', borderColor: '#059669', flex: 1 }]}
+              onPress={() => openUpdateModal('In Progress')}
+            >
+              <Text style={[styles.updateLogIcon, { color: '#FFFFFF' }]}>⚡</Text>
+              <Text style={[styles.updateLogText, { color: '#FFFFFF' }]}>START RESPONSE (MARK IN PROGRESS)</Text>
+            </TouchableOpacity>
+          ) : report.status === 'In Progress' ? (
+            <>
+              <TouchableOpacity
+                style={[styles.updateLogBtn, { backgroundColor: '#1B4332', borderColor: '#1B4332', flex: 2 }]}
+                onPress={() => openUpdateModal('Resolved')}
+              >
+                <Text style={[styles.updateLogIcon, { color: '#FFFFFF' }]}>✓</Text>
+                <Text style={[styles.updateLogText, { color: '#FFFFFF' }]}>RESOLVE CONFLICT REPORT</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.updateLogBtn, { flex: 1.2 }]}
+                onPress={() => openUpdateModal('In Progress')}
+              >
+                <Text style={styles.updateLogIcon}>✏️</Text>
+                <Text style={styles.updateLogText}>ADD FIELD NOTE</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <View style={[styles.updateLogBtn, { backgroundColor: '#E5E7EB', borderColor: '#D1D5DB', flex: 1 }]}>
+              <Text style={[styles.updateLogText, { color: '#4B5563' }]}>✓ INCIDENT RESOLVED BY RANGER</Text>
+            </View>
+          )
+        ) : (
+          /* Officer & Community Member Read-Only Status Display */
+          <View style={[styles.updateLogBtn, { backgroundColor: '#F3F4F6', borderColor: '#D1D5DB', flex: 1, paddingVertical: 12 }]}>
+            {report.status === 'Dispatched' ? (
+              <Text style={[styles.updateLogText, { color: '#6D28D9', textAlign: 'center', fontSize: 12 }]}>
+                📻 DISPATCHED • Assigned: {report.assignedRangerName || report.assignedRangerId || 'Ranger'} • Waiting for Ranger Response
+              </Text>
+            ) : report.status === 'In Progress' ? (
+              <Text style={[styles.updateLogText, { color: '#0369A1', textAlign: 'center', fontSize: 12 }]}>
+                ⏳ IN PROGRESS • Ranger {report.assignedRangerName || report.assignedRangerId || ''} is handling the incident in the field
+              </Text>
+            ) : report.status === 'Resolved' ? (
+              <Text style={[styles.updateLogText, { color: '#047857', textAlign: 'center', fontSize: 12 }]}>
+                ✓ RESOLVED • Resolution: {report.resolutionNote || 'Incident resolved'}
+              </Text>
+            ) : (
+              <Text style={[styles.updateLogText, { color: '#374151', textAlign: 'center', fontSize: 12 }]}>
+                STATUS: {report.status.toUpperCase()}
+              </Text>
+            )}
+          </View>
+        )}
       </View>
 
       {/* UPDATE MODAL */}
       <Modal visible={modalVisible} transparent={true} animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Update Incident Status</Text>
+            <Text style={styles.modalTitle}>Update Conflict Status</Text>
             
             <View style={styles.statusOptions}>
               {report?.status === 'Dispatched' && (
-                <TouchableOpacity 
-                  style={[styles.statusOption, newStatus === 'In Progress' && styles.statusOptionActive]}
-                  onPress={() => setNewStatus('In Progress')}
-                >
-                  <Text style={[styles.statusOptionText, newStatus === 'In Progress' && styles.statusOptionTextActive]}>IN PROGRESS</Text>
-                </TouchableOpacity>
+                <>
+                  <TouchableOpacity 
+                    style={[styles.statusOption, newStatus === 'In Progress' && styles.statusOptionActive]}
+                    onPress={() => setNewStatus('In Progress')}
+                  >
+                    <Text style={[styles.statusOptionText, newStatus === 'In Progress' && styles.statusOptionTextActive]}>IN PROGRESS</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.statusOption, newStatus === 'Resolved' && styles.statusOptionActive]}
+                    onPress={() => setNewStatus('Resolved')}
+                  >
+                    <Text style={[styles.statusOptionText, newStatus === 'Resolved' && styles.statusOptionTextActive]}>RESOLVED</Text>
+                  </TouchableOpacity>
+                </>
               )}
               {report?.status === 'In Progress' && (
                 <TouchableOpacity 
@@ -391,7 +452,8 @@ export const ActiveIncidentTrackingScreen: React.FC<ActiveIncidentTrackingScreen
 
             <TextInput
               style={styles.modalInput}
-              placeholder="Enter operational note (optional)"
+              placeholder={newStatus === 'Resolved' ? 'Enter mandatory resolution note (required)...' : 'Enter operational field note (optional)...'}
+              placeholderTextColor="#9CA3AF"
               value={updateNote}
               onChangeText={setUpdateNote}
               multiline

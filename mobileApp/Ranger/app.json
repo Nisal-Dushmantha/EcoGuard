@@ -7,11 +7,26 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "EcoGuard needs your location to attach precise GPS coordinates to wildlife conflict reports."
+      }
     },
     "android": {
-      "package": "com.ecoguard.ranger"
+      "package": "com.ecoguard.ranger",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "EcoGuard needs your location to attach precise GPS coordinates to wildlife conflict reports."
+        }
+      ]
+    ],
     "web": {
       "bundler": "metro"
     }

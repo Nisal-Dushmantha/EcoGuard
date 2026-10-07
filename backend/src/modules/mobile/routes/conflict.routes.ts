@@ -65,22 +65,23 @@ router.post('/reports', authenticateToken, createConflictReport);
 router.get('/reports', getConflictReports);
 
 // Ranger assigned reports
-router.get('/ranger-assigned/:rangerId?', getRangerAssignedReports);
-router.get('/ranger-assigned', getRangerAssignedReports);
+router.get('/assigned-to-me', authenticateToken, getRangerAssignedReports);
+router.get('/ranger-assigned/:rangerId?', authenticateToken, getRangerAssignedReports);
+router.get('/ranger-assigned', authenticateToken, getRangerAssignedReports);
 
 // Single report details
 router.get('/reports/:reportId', getConflictReportById);
 
 // Verify a pending report
-router.patch('/reports/:reportId/verify', verifyConflictReport);
+router.patch('/reports/:reportId/verify', authenticateToken, verifyConflictReport);
 
 // Reject a pending report (body: { reason: string })
-router.patch('/reports/:reportId/reject', rejectConflictReport);
+router.patch('/reports/:reportId/reject', authenticateToken, rejectConflictReport);
 
 // Dispatch a verified report (body: { rangerId: string, notes?: string, dispatchedBy?: string })
-router.patch('/reports/:reportId/dispatch', dispatchConflictReport);
+router.patch('/reports/:reportId/dispatch', authenticateToken, dispatchConflictReport);
 
 // Update status (e.g. IN_PROGRESS, RESOLVED)
-router.patch('/reports/:reportId/status', updateConflictStatus);
+router.patch('/reports/:reportId/status', authenticateToken, updateConflictStatus);
 
 export default router;

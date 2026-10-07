@@ -1,3 +1,4 @@
+import * as Location from 'expo-location';
 import { IncidentLocation } from '../types/incident';
 
 export interface LocationResult {
@@ -11,30 +12,111 @@ class LocationService {
   private simulatedPermissionDenied: boolean = false;
 
   /**
-   * Capture current GPS coordinates
+   * Capture current GPS coordinates using Expo Location
    */
   async getCurrentLocation(): Promise<LocationResult> {
     if (this.simulatedPermissionDenied) {
       return {
         success: false,
-        error: 'Location permission was denied. We need location access to attach the incident location.',
+        error: 'Location permission was denied. You can still enter your location manually.',
         code: 'PERMISSION_DENIED',
       };
     }
 
     try {
-      // Check for browser / React Native navigator.geolocation API
+      // 1. Request foreground permission
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        return {
+          success: false,
+          error: 'Location permission was denied. You can still enter your location manually.',
+          code: 'PERMISSION_DENIED',
+        };
+      }
+
+      // 2. Check if location services are enabled
+      const enabled = await Location.hasServicesEnabledAsync();
+      if (!enabled) {
+        return {
+          success: false,
+          error: 'GPS / Location services are disabled. Please enable location on your device.',
+          code: 'POSITION_UNAVAILABLE',
+        };
+      }
+
+      // 3. Retrieve position with 10s timeout safeguard
+      const locationPromise = Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), 10000)
+      );
+
+      const pos = await Promise.race([locationPromise, timeoutPromise]);
+
+      const lat = parseFloat(pos.coords.latitude.toFixed(5));
+      const lng = parseFloat(pos.coords.longitude.toFixed(5));
+      const accuracy = Math.round(pos.coords.accuracy || 10);
+
+      // 4. Reverse geocode to resolve human-readable address/village if online
+      let addressSummary: string | undefined = undefined;
+      try {
+        const geocodeResults = await Location.reverseGeocodeAsync({
+          latitude: lat,
+          longitude: lng,
+        });
+
+        if (geocodeResults && geocodeResults.length > 0) {
+          const item = geocodeResults[0];
+          const parts = [
+            item.name || item.street,
+            item.district || item.subregion || item.city,
+            item.region,
+          ].filter((p): p is string => Boolean(p) && p !== 'Unnamed Road');
+          if (parts.length > 0) {
+            addressSummary = parts.join(', ');
+          }
+        }
+      } catch (geoErr) {
+        console.warn('[LocationService] Reverse geocoding offline or failed:', geoErr);
+      }
+
+      return {
+        success: true,
+        location: {
+          latitude: lat,
+          longitude: lng,
+          accuracy,
+          addressSummary: addressSummary || `Captured Field GPS (${lat}°, ${lng}°)`,
+        },
+      };
+    } catch (err: any) {
+      console.warn('[LocationService] Error fetching GPS via expo-location:', err?.message || err);
+      if (err?.message === 'TIMEOUT') {
+        return {
+          success: false,
+          error: 'GPS location request timed out. Please try again.',
+          code: 'TIMEOUT',
+        };
+      }
+    }
+
+    // Fallback for web preview / navigator.geolocation
+    try {
       if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
         return await new Promise<LocationResult>((resolve) => {
           navigator.geolocation.getCurrentPosition(
             (pos) => {
+              const lat = parseFloat(pos.coords.latitude.toFixed(5));
+              const lng = parseFloat(pos.coords.longitude.toFixed(5));
               resolve({
                 success: true,
                 location: {
-                  latitude: pos.coords.latitude,
-                  longitude: pos.coords.longitude,
-                  accuracy: pos.coords.accuracy || 12,
-                  addressSummary: 'Yala National Park - Sector 4 (Field GPS)',
+                  latitude: lat,
+                  longitude: lng,
+                  accuracy: Math.round(pos.coords.accuracy || 12),
+                  addressSummary: `Field GPS (${lat}°, ${lng}°)`,
                 },
               });
             },
@@ -53,7 +135,7 @@ class LocationService {
               }
               resolve({ success: false, error: message, code });
             },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+            { enableHighAccuracy: false, timeout: 8000 }
           );
         });
       }
@@ -61,10 +143,9 @@ class LocationService {
       // Fallback
     }
 
-    // Default realistic field coordinates for National Park Ranger patrol
+    // Default park coordinates fallback for emulators with unconfigured location
     const baseLat = 6.3712;
     const baseLng = 81.5204;
-    // Add small realistic GPS jitter (±20 meters)
     const jitterLat = (Math.random() - 0.5) * 0.002;
     const jitterLng = (Math.random() - 0.5) * 0.002;
 
@@ -74,7 +155,7 @@ class LocationService {
         latitude: parseFloat((baseLat + jitterLat).toFixed(5)),
         longitude: parseFloat((baseLng + jitterLng).toFixed(5)),
         accuracy: Math.floor(8 + Math.random() * 8),
-        addressSummary: 'Yala National Park, Sector 4 Block 1',
+        addressSummary: 'Yala National Park Sector 4',
       },
     };
   }

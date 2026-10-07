@@ -392,11 +392,19 @@ export const dispatchConflictReport = async (req: Request, res: Response) => {
 /**
  * PATCH /api/mobile/conflicts/reports/:reportId/status
  * Update status of a report (e.g. IN_PROGRESS, RESOLVED)
+ * Only the assigned Ranger is allowed to trigger these field status transitions.
  */
 export const updateConflictStatus = async (req: Request, res: Response) => {
   try {
+    const authReq = req as AuthenticatedRequest;
+    const user = authReq.user;
+    if (!user) {
+      res.status(401).json({ success: false, message: 'Unauthorized: Authentication token is required.' });
+      return;
+    }
+
     const { reportId } = req.params;
-    const { status, note } = req.body;
+    const { status, note, resolutionNote } = req.body;
 
     const report = await CommunityReport.findOne({ reportId });
     if (!report) {
@@ -404,40 +412,112 @@ export const updateConflictStatus = async (req: Request, res: Response) => {
       return;
     }
 
-    // Basic transition validation
-    if (status === 'In Progress' && report.status !== 'Dispatched') {
-      res.status(400).json({ success: false, message: 'Only Dispatched reports can be marked In Progress.' });
-      return;
-    }
-    if (status === 'Resolved' && !['Dispatched', 'In Progress'].includes(report.status)) {
-      res.status(400).json({ success: false, message: 'Report must be Dispatched or In Progress before resolving.' });
+    const targetStatus = status || req.body.newStatus;
+    const noteText = (resolutionNote || note || '').trim();
+
+    // 1. Role Enforcement: Officer role is NOT allowed to trigger field response status updates
+    if (user.role === 'Community Liaison Officer') {
+      res.status(403).json({
+        success: false,
+        message: 'Forbidden: Community Liaison Officers cannot mark reports as In Progress or Resolved. Only the assigned Ranger can perform field response updates.',
+      });
       return;
     }
 
-    report.status = status;
-    
-    if (status === 'In Progress') {
-      report.inProgressAt = new Date();
-      if (note) report.officerNotes = report.officerNotes ? `${report.officerNotes}\n${note}` : note;
+    // 2. Ranger Role & Ownership Check
+    if (user.role === 'Ranger') {
+      const rangerIdStr = user.id?.toString() || (user as any)._id?.toString() || '';
+      const officerIdStr = user.officerId || '';
+      const rangerName = user.name || '';
+
+      const isAssigned =
+        (rangerIdStr && report.assignedRangerId === rangerIdStr) ||
+        (officerIdStr && report.assignedRangerId === officerIdStr) ||
+        (rangerName && report.assignedRangerName?.toLowerCase() === rangerName.toLowerCase());
+
+      if (!isAssigned) {
+        res.status(403).json({
+          success: false,
+          message: 'Forbidden: You are not assigned to this conflict report.',
+        });
+        return;
+      }
+    } else {
+      res.status(403).json({
+        success: false,
+        message: 'Forbidden: Only the assigned Ranger can update response status or resolve conflict reports.',
+      });
+      return;
     }
-    
-    if (status === 'Resolved') {
+
+    // 3. Strict Transition Validation
+    // Allowed transitions:
+    // DISPATCHED -> IN_PROGRESS
+    // IN_PROGRESS -> RESOLVED
+    if (targetStatus === 'In Progress') {
+      if (report.status !== 'Dispatched') {
+        res.status(400).json({
+          success: false,
+          message: `Cannot change status to "In Progress". Current status: "${report.status}". Report must be Dispatched.`,
+        });
+        return;
+      }
+      report.status = 'In Progress';
+      report.inProgressAt = new Date();
+      if (noteText) {
+        report.officerNotes = report.officerNotes
+          ? `${report.officerNotes}\n[In Progress - Ranger ${user.name}]: ${noteText}`
+          : `[In Progress - Ranger ${user.name}]: ${noteText}`;
+      }
+    } else if (targetStatus === 'Resolved') {
+      if (report.status !== 'In Progress') {
+        if (report.status === 'Dispatched') {
+          res.status(400).json({
+            success: false,
+            message: 'Invalid status transition. Report must be set to "In Progress" before it can be resolved.',
+          });
+          return;
+        }
+        res.status(400).json({
+          success: false,
+          message: `Cannot resolve report. Current status is "${report.status}". Report must be In Progress before resolving.`,
+        });
+        return;
+      }
+
+      if (!noteText) {
+        res.status(400).json({
+          success: false,
+          message: 'Resolution notes are required to resolve a conflict report.',
+        });
+        return;
+      }
+
+      report.status = 'Resolved';
       report.resolvedAt = new Date();
-      report.resolvedBy = (req as any).user?.name || 'Community Liaison Officer';
-      report.resolutionNote = note || '';
-      if (note) report.officerNotes = report.officerNotes ? `${report.officerNotes}\nResolved: ${note}` : `Resolved: ${note}`;
+      report.resolvedBy = user.name || 'Ranger';
+      report.resolutionNote = noteText;
+      report.officerNotes = report.officerNotes
+        ? `${report.officerNotes}\n[Resolved by Ranger ${user.name}]: ${noteText}`
+        : `[Resolved by Ranger ${user.name}]: ${noteText}`;
+    } else {
+      res.status(400).json({
+        success: false,
+        message: `Invalid status transition to "${targetStatus}". Allowed field transitions are "In Progress" and "Resolved".`,
+      });
+      return;
     }
 
     await report.save();
 
     res.json({
       success: true,
-      message: `Status updated to ${status}.`,
+      message: `Status updated to ${report.status}.`,
       data: report.toObject(),
     });
   } catch (err: any) {
     console.error('Error in updateConflictStatus:', err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error updating status' });
   }
 };
 
@@ -616,21 +696,23 @@ export const uploadEvidencePhoto = async (req: Request, res: Response): Promise<
  */
 export const getRangerAssignedReports = async (req: Request, res: Response) => {
   try {
-    const rangerParam = req.params.rangerId || (req.query.rangerId as string);
     const authUser = (req as AuthenticatedRequest).user;
-    const rangerId = rangerParam || authUser?.id || '';
+    const rangerParam = req.params.rangerId || (req.query.rangerId as string);
+    const rangerId = rangerParam || authUser?.id || authUser?.officerId || '';
     const rangerName = (req.query.rangerName as string) || authUser?.name || '';
 
     const orClauses: any[] = [];
     if (rangerId && rangerId !== 'undefined' && rangerId !== 'null') {
       orClauses.push({ assignedRangerId: rangerId });
     }
+    if (authUser?.officerId && authUser.officerId !== rangerId) {
+      orClauses.push({ assignedRangerId: authUser.officerId });
+    }
     if (rangerName && rangerName !== 'undefined' && rangerName !== 'null') {
       orClauses.push({ assignedRangerName: new RegExp(rangerName, 'i') });
       orClauses.push({ actionTaken: new RegExp(rangerName, 'i') });
     }
 
-    // If an identifier was supplied but no matches on specific clauses, or if neither given
     const filter = orClauses.length > 0 
       ? { $or: orClauses } 
       : { assignedRangerId: { $exists: true, $ne: '' } };
@@ -642,6 +724,7 @@ export const getRangerAssignedReports = async (req: Request, res: Response) => {
     res.json({
       success: true,
       reports,
+      data: reports,
       total: reports.length,
     });
   } catch (err: any) {
