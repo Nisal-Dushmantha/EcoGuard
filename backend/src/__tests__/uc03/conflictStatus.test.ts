@@ -13,6 +13,21 @@ jest.mock('../../models/User.model.js');
 describe('UC03 - Backend Conflict Status Transition Unit Tests', () => {
   let req: any;
   let res: any;
+  let logSpy: jest.SpyInstance;
+  let warnSpy: jest.SpyInstance;
+  let errorSpy: jest.SpyInstance;
+
+  beforeAll(() => {
+    logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterAll(() => {
+    logSpy.mockRestore();
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();

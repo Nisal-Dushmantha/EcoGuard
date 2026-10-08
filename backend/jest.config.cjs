@@ -26,7 +26,10 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.test.ts'],
   collectCoverageFrom: [
     'src/models/CommunityReport.model.ts',
+    'src/models/ConservationReport.model.ts',
     'src/modules/mobile/controllers/conflict.controller.ts',
+    'src/modules/webapp/controllers/report.controller.ts',
+    'src/modules/webapp/services/report.service.ts',
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'json', 'html'],
