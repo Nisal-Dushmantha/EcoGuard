@@ -1,8 +1,7 @@
-// Live integration test for UC01 Backend Endpoints
-const BASE_URL = 'http://localhost:5000';
+const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:5000';
 
 async function runLiveTests() {
-  console.log('Testing EcoGuard Backend API...');
+  console.log(`Testing EcoGuard Backend API at ${BASE_URL}...`);
 
   try {
     // 1. Health check
@@ -62,7 +61,14 @@ async function runLiveTests() {
 
     console.log('All backend live endpoints verified successfully!');
   } catch (err) {
-    console.error('Test execution error:', err);
+    if (err?.cause?.code === 'ECONNREFUSED' || err?.message?.includes('fetch failed')) {
+      console.error('\n❌ Connection Error: Backend server is NOT running on ' + BASE_URL);
+      console.error('👉 Please start the backend in a separate terminal first:');
+      console.error('   cd "backend"');
+      console.error('   npm run dev\n');
+    } else {
+      console.error('Test execution error:', err);
+    }
   }
 }
 
