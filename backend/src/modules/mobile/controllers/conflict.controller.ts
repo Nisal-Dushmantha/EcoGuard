@@ -697,25 +697,43 @@ export const uploadEvidencePhoto = async (req: Request, res: Response): Promise<
 export const getRangerAssignedReports = async (req: Request, res: Response) => {
   try {
     const authUser = (req as AuthenticatedRequest).user;
-    const rangerParam = req.params.rangerId || (req.query.rangerId as string);
-    const rangerId = rangerParam || authUser?.id || authUser?.officerId || '';
-    const rangerName = (req.query.rangerName as string) || authUser?.name || '';
+    const isRanger = authUser?.role === 'Ranger';
 
-    const orClauses: any[] = [];
-    if (rangerId && rangerId !== 'undefined' && rangerId !== 'null') {
-      orClauses.push({ assignedRangerId: rangerId });
-    }
-    if (authUser?.officerId && authUser.officerId !== rangerId) {
-      orClauses.push({ assignedRangerId: authUser.officerId });
-    }
-    if (rangerName && rangerName !== 'undefined' && rangerName !== 'null') {
-      orClauses.push({ assignedRangerName: new RegExp(rangerName, 'i') });
-      orClauses.push({ actionTaken: new RegExp(rangerName, 'i') });
-    }
+    let filter: any = {};
 
-    const filter = orClauses.length > 0 
-      ? { $or: orClauses } 
-      : { assignedRangerId: { $exists: true, $ne: '' } };
+    if (isRanger) {
+      // Security Enforcement: If user is a Ranger, ignore user-supplied rangerId query/params
+      // and strictly retrieve reports assigned to the authenticated Ranger.
+      const rId = authUser.id;
+      const offId = authUser.officerId;
+      const rName = authUser.name;
+
+      const orClauses: any[] = [];
+      if (rId) orClauses.push({ assignedRangerId: rId });
+      if (offId && offId !== rId) orClauses.push({ assignedRangerId: offId });
+      if (rName) {
+        orClauses.push({ assignedRangerName: new RegExp(`^${rName}$`, 'i') });
+      }
+
+      filter = orClauses.length > 0 ? { $or: orClauses } : { assignedRangerId: rId || 'none' };
+    } else {
+      // Officer or other authorized roles querying ranger assignments
+      const rangerParam = req.params.rangerId || (req.query.rangerId as string);
+      const rangerName = (req.query.rangerName as string) || authUser?.name || '';
+      const rangerId = rangerParam || (authUser?.role === 'Ranger' ? authUser?.id : '');
+
+      const orClauses: any[] = [];
+      if (rangerId && rangerId !== 'undefined' && rangerId !== 'null') {
+        orClauses.push({ assignedRangerId: rangerId });
+      }
+      if (rangerName && rangerName !== 'undefined' && rangerName !== 'null') {
+        orClauses.push({ assignedRangerName: new RegExp(rangerName, 'i') });
+      }
+
+      filter = orClauses.length > 0
+        ? { $or: orClauses }
+        : { assignedRangerId: { $exists: true, $ne: '' } };
+    }
 
     const reports = await CommunityReport.find(filter)
       .sort({ dispatchedAt: -1, reportedAt: -1 })

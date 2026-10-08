@@ -80,6 +80,11 @@ jest.mock('expo-image-picker', () => ({
       assets: [{ uri: 'file:///data/user/0/ecoguard/cache/test_gallery.jpg', fileName: 'test_gallery.jpg', fileSize: 2048, mimeType: 'image/jpeg' }],
     })
   ),
+  MediaType: {
+    IMAGES: 'images',
+    VIDEOS: 'videos',
+    ALL: 'all',
+  },
   MediaTypeOptions: {
     Images: 'images',
     Videos: 'videos',
