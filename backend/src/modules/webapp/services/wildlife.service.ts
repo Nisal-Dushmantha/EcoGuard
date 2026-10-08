@@ -325,11 +325,73 @@ const INITIAL_ANIMALS = [
     currentZoneId: 'ZONE-YALA-04',
     currentZoneName: 'Block I Core Nature Reserve',
     isInHighRiskZone: false,
-    batteryLevel: 88,
+    batteryLevel: 18,
     signalStrength: 'Weak',
     lastPingAt: new Date(Date.now() - 1000 * 60 * 22),
     collarModel: 'EcoTrack Hydro-Tag Acoustic/GPS',
-    notes: 'Basking on Buthawa tank mudbank. Signal occasionally degrades when submerged.',
+    notes: 'Basking on Buthawa tank mudbank. Signal degraded & battery critical (18%) due to extended underwater submersion.',
+  },
+  {
+    collarId: 'COL-BOAR-014',
+    animalId: 'BOAR-014',
+    name: 'Bora (Alpha Boar)',
+    species: 'Wild Boar',
+    sex: 'Male',
+    ageYears: 5,
+    weightKg: 130,
+    park: 'Wilpattu National Park',
+    currentLocation: {
+      latitude: 8.438,
+      longitude: 79.948,
+      altitude: 19,
+      timestamp: new Date(),
+      speedKmh: 4.1,
+      heading: 115,
+    },
+    locationHistory: [
+      { latitude: 8.428, longitude: 79.932, timestamp: new Date(Date.now() - 3600000 * 2), speedKmh: 3.8, heading: 110 },
+      { latitude: 8.438, longitude: 79.948, timestamp: new Date(), speedKmh: 4.1, heading: 115 },
+    ],
+    status: 'High Risk',
+    currentZoneId: 'ZONE-WILP-01',
+    currentZoneName: 'Kala Oya Estuary High-Risk Frontier',
+    isInHighRiskZone: true,
+    batteryLevel: 34,
+    signalStrength: 'Moderate',
+    lastPingAt: new Date(Date.now() - 1000 * 60 * 11),
+    collarModel: 'EcoTrack Solar Mini-Tag',
+    notes: 'Sounder alpha leading herd into unauthorized village agricultural fringe. Collar solar lens mud-caked (34% battery).',
+  },
+  {
+    collarId: 'COL-BUFF-022',
+    animalId: 'BUFF-022',
+    name: 'Mahasen',
+    species: 'Water Buffalo',
+    sex: 'Male',
+    ageYears: 11,
+    weightKg: 620,
+    park: 'Udawalawe National Park',
+    currentLocation: {
+      latitude: 6.468,
+      longitude: 80.885,
+      altitude: 65,
+      timestamp: new Date(),
+      speedKmh: 3.4,
+      heading: 205,
+    },
+    locationHistory: [
+      { latitude: 6.478, longitude: 80.895, timestamp: new Date(Date.now() - 3600000 * 3), speedKmh: 2.9, heading: 195 },
+      { latitude: 6.468, longitude: 80.885, timestamp: new Date(), speedKmh: 3.4, heading: 205 },
+    ],
+    status: 'High Risk',
+    currentZoneId: 'ZONE-UDAW-01',
+    currentZoneName: 'Southern Highway Elephant Corridor',
+    isInHighRiskZone: true,
+    batteryLevel: 76,
+    signalStrength: 'Strong',
+    lastPingAt: new Date(Date.now() - 1000 * 60 * 5),
+    collarModel: 'EcoTrack Heavy V4-VHF',
+    notes: 'Dominant bull leading herd of 18 water buffalo across highway buffer fence into unauthorized road reserve.',
   },
   {
     collarId: 'COL-ELE-201',
@@ -483,6 +545,216 @@ const INITIAL_ALERTS = [
     dispatchedRangers: [],
   },
   {
+    alertId: 'ALT-2026-0951',
+    collarId: 'COL-ELE-201',
+    animalId: 'ELE-201',
+    animalName: 'Wilba (Tuskless)',
+    species: 'Asian Elephant',
+    park: 'Wilpattu National Park',
+    zoneId: 'ZONE-WILP-01',
+    zoneName: 'Kala Oya Estuary High-Risk Frontier',
+    severity: 'High Risk',
+    status: 'Active',
+    triggerReason: 'Unauthorized boundary entry: Collared Bull Elephant crossed boundary fence into private shrimp aquaculture settlement.',
+    location: {
+      latitude: 8.425,
+      longitude: 79.912,
+      sector: 'Sector M - Kala Oya Mangroves',
+    },
+    triggeredAt: new Date(Date.now() - 1000 * 60 * 15),
+    managerNotes: '',
+    dispatchedRangers: [],
+  },
+  {
+    alertId: 'ALT-2026-0952',
+    collarId: 'COL-BUFF-022',
+    animalId: 'BUFF-022',
+    animalName: 'Mahasen',
+    species: 'Water Buffalo',
+    park: 'Udawalawe National Park',
+    zoneId: 'ZONE-UDAW-01',
+    zoneName: 'Southern Highway Elephant Corridor',
+    severity: 'High Risk',
+    status: 'Active',
+    triggerReason: 'Unauthorized highway corridor entry: Water Buffalo herd broke through perimeter fence into restricted road reserve.',
+    location: {
+      latitude: 6.468,
+      longitude: 80.885,
+      sector: 'Corridor 3 - Highway Reserve',
+    },
+    triggeredAt: new Date(Date.now() - 1000 * 60 * 22),
+    managerNotes: '',
+    dispatchedRangers: [],
+  },
+  {
+    alertId: 'ALT-2026-0953',
+    collarId: 'COL-BOAR-014',
+    animalId: 'BOAR-014',
+    animalName: 'Bora (Alpha Boar)',
+    species: 'Wild Boar',
+    park: 'Wilpattu National Park',
+    zoneId: 'ZONE-WILP-01',
+    zoneName: 'Kala Oya Estuary High-Risk Frontier',
+    severity: 'Warning',
+    status: 'Active',
+    triggerReason: 'Unauthorized perimeter entry: Sounder of wild boars crossed park boundary into private paddy farming plots.',
+    location: {
+      latitude: 8.438,
+      longitude: 79.948,
+      sector: 'Sector V - Village Buffer',
+    },
+    triggeredAt: new Date(Date.now() - 1000 * 60 * 35),
+    managerNotes: '',
+    dispatchedRangers: [],
+  },
+  {
+    alertId: 'ALT-2026-0947',
+    collarId: 'COL-CROC-011',
+    animalId: 'CROC-011',
+    animalName: 'Kumbhira',
+    species: 'Mugger Crocodile',
+    park: 'Yala National Park',
+    zoneId: 'ZONE-YALA-04',
+    zoneName: 'Block I Core Nature Reserve',
+    severity: 'High Risk',
+    status: 'Active',
+    triggerReason: 'Collar battery level critical (18% remaining). Prolonged underwater submersion preventing solar recharging; immediate battery module swap required.',
+    location: {
+      latitude: 6.352,
+      longitude: 81.442,
+      sector: 'Sector B - Buthawa Tank',
+    },
+    triggeredAt: new Date(Date.now() - 1000 * 60 * 30),
+    managerNotes: '',
+    dispatchedRangers: [],
+  },
+  {
+    alertId: 'ALT-2026-0948',
+    collarId: 'COL-BOAR-014',
+    animalId: 'BOAR-014',
+    animalName: 'Bora (Alpha Boar)',
+    species: 'Wild Boar',
+    park: 'Wilpattu National Park',
+    zoneId: 'ZONE-WILP-01',
+    zoneName: 'Kala Oya Estuary High-Risk Frontier',
+    severity: 'Warning',
+    status: 'Active',
+    triggerReason: 'Collar battery level low (34% remaining). Solar harvesting panel mud-caked during root foraging; ranger inspection scheduled.',
+    location: {
+      latitude: 8.438,
+      longitude: 79.948,
+      sector: 'Sector V - Village Buffer',
+    },
+    triggeredAt: new Date(Date.now() - 1000 * 60 * 38),
+    managerNotes: '',
+    dispatchedRangers: [],
+  },
+  {
+    alertId: 'ALT-2026-0945',
+    collarId: 'COL-DEER-142',
+    animalId: 'DEER-142',
+    animalName: 'Nelli',
+    species: 'Spotted Deer',
+    park: 'Yala National Park',
+    zoneId: 'ZONE-YALA-04',
+    zoneName: 'Block I Core Nature Reserve',
+    severity: 'Warning',
+    status: 'Active',
+    triggerReason: 'Collar battery level critical/low (42% remaining). Solar panel recharging degraded under dense forest canopy; maintenance dispatch required.',
+    location: {
+      latitude: 6.322,
+      longitude: 81.442,
+      sector: 'Sector A - Main Grasslands',
+    },
+    triggeredAt: new Date(Date.now() - 1000 * 60 * 42),
+    managerNotes: '',
+    dispatchedRangers: [],
+  },
+  {
+    alertId: 'ALT-2026-0961',
+    collarId: 'COL-LEO-019',
+    animalId: 'LEO-019',
+    animalName: 'Kalu (Shadow)',
+    species: 'Sri Lankan Leopard',
+    park: 'Yala National Park',
+    zoneId: 'ZONE-YALA-04',
+    zoneName: 'Block I Core Nature Reserve',
+    severity: 'High Risk',
+    status: 'Active',
+    triggerReason: 'Critical Collar Battery (14% remaining). Solar harvesting module damaged after territorial leopard fight; emergency collar retrieval/replacement required.',
+    location: {
+      latitude: 6.335,
+      longitude: 81.468,
+      sector: 'Sector K - Kotaselimbe Rocks',
+    },
+    triggeredAt: new Date(Date.now() - 1000 * 60 * 8),
+    managerNotes: '',
+    dispatchedRangers: [],
+  },
+  {
+    alertId: 'ALT-2026-0962',
+    collarId: 'COL-ELE-301',
+    animalId: 'ELE-301',
+    animalName: 'Walawe Raja',
+    species: 'Asian Elephant',
+    park: 'Udawalawe National Park',
+    zoneId: 'ZONE-UDAW-01',
+    zoneName: 'Southern Highway Elephant Corridor',
+    severity: 'Warning',
+    status: 'Active',
+    triggerReason: 'Collar battery level low (28% remaining). Telemetry ping frequency automatically throttled to reserve remaining power; battery service dispatched.',
+    location: {
+      latitude: 6.472,
+      longitude: 80.872,
+      sector: 'Corridor 2 - Highway Transit',
+    },
+    triggeredAt: new Date(Date.now() - 1000 * 60 * 12),
+    managerNotes: '',
+    dispatchedRangers: [],
+  },
+  {
+    alertId: 'ALT-2026-0963',
+    collarId: 'COL-ELE-084',
+    animalId: 'ELE-084',
+    animalName: 'Gemunu (Tusker)',
+    species: 'Asian Elephant',
+    park: 'Yala National Park',
+    zoneId: 'ZONE-YALA-02',
+    zoneName: 'Kataragama Boundary Agricultural Buffer',
+    severity: 'High Risk',
+    status: 'Active',
+    triggerReason: 'Unauthorized area entry: Collared tusker breached boundary electric fence and entered civilian sugarcane plantations.',
+    location: {
+      latitude: 6.418,
+      longitude: 81.339,
+      sector: 'Sector K - Kataragama South Farmlands',
+    },
+    triggeredAt: new Date(Date.now() - 1000 * 60 * 10),
+    managerNotes: '',
+    dispatchedRangers: [],
+  },
+  {
+    alertId: 'ALT-2026-0964',
+    collarId: 'COL-LEO-031',
+    animalId: 'LEO-031',
+    animalName: 'Chitra (Flora)',
+    species: 'Sri Lankan Leopard',
+    park: 'Yala National Park',
+    zoneId: 'ZONE-YALA-03',
+    zoneName: 'Palatupana Coastal Dunes Corridor',
+    severity: 'High Risk',
+    status: 'Active',
+    triggerReason: 'Unauthorized perimeter entry: Leopard detected within 40m of main tourist access road & park ticketing toll gate.',
+    location: {
+      latitude: 6.265,
+      longitude: 81.442,
+      sector: 'Sector P - Palatupana Entrance Corridor',
+    },
+    triggeredAt: new Date(Date.now() - 1000 * 60 * 14),
+    managerNotes: '',
+    dispatchedRangers: [],
+  },
+  {
     alertId: 'ALT-2026-0919',
     collarId: 'COL-ELE-102',
     animalId: 'ELE-102',
@@ -519,26 +791,105 @@ class WildlifeService {
     if (this.initialized) return;
     this.initialized = true;
     try {
-      // Seed MongoDB if empty
-      const zoneCount = await RiskZone.countDocuments().catch(() => -1);
-      if (zoneCount === 0) {
-        await RiskZone.insertMany(INITIAL_ZONES).catch(() => {});
+      // Upsert zones
+      for (const z of INITIAL_ZONES) {
+        await RiskZone.findOneAndUpdate({ zoneId: z.zoneId }, { $setOnInsert: z }, { upsert: true }).catch(() => {});
       }
-      const animalCount = await CollaredAnimal.countDocuments().catch(() => -1);
-      if (animalCount === 0) {
-        await CollaredAnimal.insertMany(INITIAL_ANIMALS).catch(() => {});
+      // Upsert animals
+      for (const a of INITIAL_ANIMALS) {
+        await CollaredAnimal.findOneAndUpdate({ collarId: a.collarId }, { $setOnInsert: a }, { upsert: true }).catch(() => {});
       }
-      const alertCount = await WildlifeAlert.countDocuments().catch(() => -1);
-      if (alertCount === 0) {
-        await WildlifeAlert.insertMany(INITIAL_ALERTS).catch(() => {});
+      // Upsert alerts
+      for (const al of INITIAL_ALERTS) {
+        await WildlifeAlert.findOneAndUpdate({ alertId: al.alertId }, { $setOnInsert: al }, { upsert: true }).catch(() => {});
       }
     } catch {
       // Use fallback in-memory state smoothly
+    }
+    await this.syncLowBatteryAlerts();
+  }
+
+  async syncLowBatteryAlerts() {
+    try {
+      const animals = await CollaredAnimal.find({ batteryLevel: { $lt: 50 } }).lean();
+      for (const animal of animals) {
+        const existingAlert = await WildlifeAlert.findOne({
+          collarId: animal.collarId,
+          status: { $in: ['Active', 'Acknowledged'] },
+          triggerReason: { $regex: /battery/i },
+        });
+
+        if (!existingAlert) {
+          const alertId = `ALT-BAT-${animal.collarId.replace(/[^a-zA-Z0-9]/g, '')}`;
+          await WildlifeAlert.findOneAndUpdate(
+            { alertId },
+            {
+              $setOnInsert: {
+                alertId,
+                collarId: animal.collarId,
+                animalId: animal.animalId,
+                animalName: animal.name,
+                species: animal.species,
+                park: animal.park,
+                zoneId: animal.currentZoneId || 'ZONE-YALA-04',
+                zoneName: animal.currentZoneName || 'Primary Reserve Zone',
+                severity: animal.batteryLevel < 20 ? 'High Risk' : 'Warning',
+                status: 'Active',
+                triggerReason: `Collar battery level critical/low (${animal.batteryLevel}% remaining). Solar recharging insufficient; inspection or replacement required.`,
+                location: {
+                  latitude: animal.currentLocation?.latitude || 6.322,
+                  longitude: animal.currentLocation?.longitude || 81.442,
+                  sector: animal.currentZoneName || 'Park Sector',
+                },
+                triggeredAt: new Date(),
+                managerNotes: '',
+                dispatchedRangers: [],
+              },
+            },
+            { upsert: true }
+          );
+        }
+      }
+    } catch {}
+
+    // In-memory sync
+    for (const animal of this.inMemoryAnimals.filter((a) => a.batteryLevel < 50)) {
+      const existingAlert = this.inMemoryAlerts.find(
+        (al) =>
+          al.collarId === animal.collarId &&
+          (al.status === 'Active' || al.status === 'Acknowledged') &&
+          /battery/i.test(al.triggerReason)
+      );
+      if (!existingAlert) {
+        const alertId = `ALT-BAT-${animal.collarId.replace(/[^a-zA-Z0-9]/g, '')}`;
+        this.inMemoryAlerts.unshift({
+          alertId,
+          collarId: animal.collarId,
+          animalId: animal.animalId,
+          animalName: animal.name,
+          species: animal.species,
+          park: animal.park,
+          zoneId: animal.currentZoneId || 'ZONE-YALA-04',
+          zoneName: animal.currentZoneName || 'Primary Reserve Zone',
+          severity: animal.batteryLevel < 20 ? 'High Risk' : 'Warning',
+          status: 'Active',
+          triggerReason: `Collar battery level critical/low (${animal.batteryLevel}% remaining). Solar recharging insufficient; inspection or replacement required.`,
+          location: {
+            latitude: animal.currentLocation?.latitude || 6.322,
+            longitude: animal.currentLocation?.longitude || 81.442,
+            sector: animal.currentZoneName || 'Park Sector',
+          },
+          triggeredAt: new Date(),
+          managerNotes: '',
+          dispatchedRangers: [],
+        });
+      }
     }
   }
 
   async getMonitoringOverview(park?: string) {
     await this.ensureSeeded();
+    await this.syncLowBatteryAlerts();
 
     let animals: any[] = [];
     let zones: any[] = [];
@@ -707,6 +1058,7 @@ class WildlifeService {
 
   async getAlerts(query: { park?: string; status?: string; severity?: string; search?: string }) {
     await this.ensureSeeded();
+    await this.syncLowBatteryAlerts();
     let alerts: any[] = [];
     try {
       const filter: any = {};
