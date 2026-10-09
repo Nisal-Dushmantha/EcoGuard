@@ -286,7 +286,7 @@ export const PendingReportsScreen: React.FC<PendingReportsScreenProps> = ({ navi
           )}
           <TouchableOpacity
             style={styles.avatarCircle}
-            onPress={() => navigation.navigate('OfficerProfile')}
+            onPress={() => navigation.navigate('LiaisonOfficerProfile')}
           >
             <Text style={styles.avatarText}>
               {officerName ? officerName.substring(0, 2).toUpperCase() : 'CO'}
@@ -477,30 +477,6 @@ export const PendingReportsScreen: React.FC<PendingReportsScreenProps> = ({ navi
           <View style={{ height: 20 }} />
         </ScrollView>
       )}
-
-      {/* ── Bottom Navigation ─────────────────────────────────────────── */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('ConflictOperationsHome')}
-        >
-          <Text style={styles.navIcon}>🛡</Text>
-          <Text style={styles.navLabel}>Operations</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.navItem, styles.navItemActive]}>
-          <Text style={styles.navIconActive}>📋</Text>
-          <Text style={styles.navLabelActive}>Reports</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('ConflictActivity')}
-        >
-          <Text style={styles.navIcon}>🕒</Text>
-          <Text style={styles.navLabel}>Activity</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };

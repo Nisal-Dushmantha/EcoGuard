@@ -144,7 +144,7 @@ export const CommunityMemberDashboard: React.FC<CommunityMemberDashboardProps> =
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.avatarCircle}
-            onPress={() => navigation.navigate('OfficerProfile')}
+            onPress={() => navigation.navigate('CommunityMemberProfile')}
           >
             <Text style={styles.avatarText}>
               {memberName ? memberName.substring(0, 2).toUpperCase() : 'CM'}
@@ -355,38 +355,6 @@ export const CommunityMemberDashboard: React.FC<CommunityMemberDashboardProps> =
           <View style={{ height: 24 }} />
         </ScrollView>
       )}
-
-      {/* ── 7. Bottom Navigation Bar ───────────────────────────────────────── */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItemActive}>
-          <Text style={styles.navIconActive}>🏠</Text>
-          <Text style={styles.navLabelActive}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('CommunityMemberReports')}
-        >
-          <Text style={styles.navIcon}>📋</Text>
-          <Text style={styles.navLabel}>My Reports</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.centerFab}
-          onPress={() => navigation.navigate('ReportWildlifeConflict')}
-          activeOpacity={0.88}
-        >
-          <Text style={styles.centerFabIcon}>＋</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('OfficerProfile')}
-        >
-          <Text style={styles.navIcon}>👤</Text>
-          <Text style={styles.navLabel}>Profile</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };

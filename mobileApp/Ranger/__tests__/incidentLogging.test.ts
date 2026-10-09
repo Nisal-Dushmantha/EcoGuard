@@ -387,6 +387,7 @@ describe('UC01 – Ranger Incident Logging Comprehensive Test Suite', () => {
     const missingLoc = validateIncidentForm({
       incidentType: 'Snare Detected',
       location: null as any,
+      photoUri: null,
       description: 'Test description 12345',
     });
     expect(missingLoc.isValid).toBe(false);
@@ -396,6 +397,7 @@ describe('UC01 – Ranger Incident Logging Comprehensive Test Suite', () => {
     const latHigh = validateIncidentForm({
       incidentType: 'Snare Detected',
       location: { latitude: 91, longitude: 80 },
+      photoUri: null,
       description: 'Test description 12345',
     });
     expect(latHigh.isValid).toBe(false);
@@ -405,6 +407,7 @@ describe('UC01 – Ranger Incident Logging Comprehensive Test Suite', () => {
     const latLow = validateIncidentForm({
       incidentType: 'Snare Detected',
       location: { latitude: -95, longitude: 80 },
+      photoUri: null,
       description: 'Test description 12345',
     });
     expect(latLow.isValid).toBe(false);
@@ -414,6 +417,7 @@ describe('UC01 – Ranger Incident Logging Comprehensive Test Suite', () => {
     const lngHigh = validateIncidentForm({
       incidentType: 'Snare Detected',
       location: { latitude: 10, longitude: 185 },
+      photoUri: null,
       description: 'Test description 12345',
     });
     expect(lngHigh.isValid).toBe(false);
@@ -423,6 +427,7 @@ describe('UC01 – Ranger Incident Logging Comprehensive Test Suite', () => {
     const lngLow = validateIncidentForm({
       incidentType: 'Snare Detected',
       location: { latitude: 10, longitude: -185 },
+      photoUri: null,
       description: 'Test description 12345',
     });
     expect(lngLow.isValid).toBe(false);
@@ -432,6 +437,7 @@ describe('UC01 – Ranger Incident Logging Comprehensive Test Suite', () => {
     const nanCoords = validateIncidentForm({
       incidentType: 'Snare Detected',
       location: { latitude: NaN, longitude: 80 },
+      photoUri: null,
       description: 'Test description 12345',
     });
     expect(nanCoords.isValid).toBe(false);
@@ -443,6 +449,7 @@ describe('UC01 – Ranger Incident Logging Comprehensive Test Suite', () => {
     const invalidType = validateIncidentForm({
       incidentType: 'Unidentified Flying Object' as any,
       location: { latitude: 6.37, longitude: 81.52 },
+      photoUri: null,
       description: 'Test valid description here',
     });
     expect(invalidType.isValid).toBe(false);
@@ -451,6 +458,7 @@ describe('UC01 – Ranger Incident Logging Comprehensive Test Suite', () => {
     const overlyLong = validateIncidentForm({
       incidentType: 'Snare Detected',
       location: { latitude: 6.37, longitude: 81.52 },
+      photoUri: null,
       description: 'A'.repeat(1501),
     });
     expect(overlyLong.isValid).toBe(false);

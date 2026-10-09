@@ -16,7 +16,7 @@ export interface PhotoResult {
 // quality 0.75 → good evidence clarity at ~300–600 KB on modern phones
 // base64: false → we send the raw file via multipart, NOT base64 in JSON
 const PICKER_OPTIONS: ImagePicker.ImagePickerOptions = {
-  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  mediaTypes: (ImagePicker as any).MediaType?.IMAGES || 'images',
   allowsEditing: true,
   quality: 0.75,
   base64: false,           // ← KEY: never embed base64 in the picker result

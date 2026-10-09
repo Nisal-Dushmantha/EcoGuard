@@ -190,25 +190,54 @@ export const ReportWildlifeConflictScreen: React.FC<ReportWildlifeConflictProps>
     loadProfile();
   }, []);
 
+  const isMountedRef = React.useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // ── GPS Fetching ──────────────────────────────────────────────────────────
   const handleGetLocation = async () => {
+    if (fetchingGps) return; // Prevent duplicate requests while loading
     setFetchingGps(true);
     try {
       const res = await locationService.getCurrentLocation();
+      if (!isMountedRef.current) return;
+
       if (res.success && res.location) {
-        setLatitude(res.location.latitude);
-        setLongitude(res.location.longitude);
+        const numLat = Number(res.location.latitude);
+        const numLng = Number(res.location.longitude);
+        setLatitude(numLat);
+        setLongitude(numLng);
         setGpsAddress(res.location.addressSummary || null);
-        if (!locationName.trim()) {
-          setLocationName(res.location.addressSummary || 'Captured Field GPS Position');
+
+        // Update locationName if empty or resolved address available
+        if (res.location.addressSummary) {
+          setLocationName(res.location.addressSummary);
+        } else if (!locationName.trim()) {
+          setLocationName(`Field Location (${numLat.toFixed(4)}°, ${numLng.toFixed(4)}°)`);
         }
       } else {
-        Alert.alert('Location Error', res.error || 'Unable to get your current location.');
+        const errMsg =
+          res.code === 'PERMISSION_DENIED'
+            ? 'Location permission is required to use your current location. You can still enter the location manually.'
+            : res.error || 'Unable to retrieve location coordinates. You can enter the location manually.';
+        Alert.alert('Location Notice', errMsg, [{ text: 'OK' }]);
       }
     } catch {
-      Alert.alert('Location Error', 'Unable to get your current location.');
+      if (isMountedRef.current) {
+        Alert.alert(
+          'Location Notice',
+          'Unable to retrieve GPS coordinates. You can still enter the location manually.',
+          [{ text: 'OK' }]
+        );
+      }
     } finally {
-      setFetchingGps(false);
+      if (isMountedRef.current) {
+        setFetchingGps(false);
+      }
     }
   };
 
@@ -487,28 +516,33 @@ export const ReportWildlifeConflictScreen: React.FC<ReportWildlifeConflictProps>
             <View style={styles.gpsHeader}>
               <Text style={styles.gpsTitle}>GPS Location Coordinates</Text>
               <TouchableOpacity
-                style={styles.gpsBtn}
+                style={[styles.gpsBtn, fetchingGps && { opacity: 0.75 }]}
                 onPress={handleGetLocation}
                 disabled={fetchingGps}
+                activeOpacity={0.8}
               >
                 {fetchingGps ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <Text style={styles.gpsBtnText}>Getting location...</Text>
+                  </View>
                 ) : (
-                  <Text style={styles.gpsBtnText}>📍 Get Current Location</Text>
+                  <Text style={styles.gpsBtnText}>📍 Use Current Location</Text>
                 )}
               </TouchableOpacity>
             </View>
 
-            {latitude && longitude ? (
+            {latitude !== undefined && longitude !== undefined ? (
               <View style={styles.gpsDisplay}>
-                <Text style={styles.gpsCoordText}>
-                  Lat: {latitude.toFixed(5)}° N  |  Long: {longitude.toFixed(5)}° E
-                </Text>
-                {gpsAddress && <Text style={styles.gpsAddressText}>{gpsAddress}</Text>}
+                <View style={{ flexDirection: 'row', gap: 16, marginBottom: 4 }}>
+                  <Text style={styles.gpsCoordText}>Latitude: {latitude.toFixed(4)}</Text>
+                  <Text style={styles.gpsCoordText}>Longitude: {longitude.toFixed(4)}</Text>
+                </View>
+                {gpsAddress ? <Text style={styles.gpsAddressText}>📍 {gpsAddress}</Text> : null}
               </View>
             ) : (
               <Text style={styles.gpsHint}>
-                Tap button above to auto-capture high-precision field coordinates.
+                Tap "Use Current Location" to auto-capture high-precision GPS coordinates.
               </Text>
             )}
           </View>

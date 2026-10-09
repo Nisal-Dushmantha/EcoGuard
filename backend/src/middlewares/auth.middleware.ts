@@ -8,6 +8,7 @@ export interface AuthUserPayload {
   email: string;
   role: UserRole;
   assignedPark: string;
+  officerId?: string;
 }
 
 export interface AuthenticatedRequest extends Request {

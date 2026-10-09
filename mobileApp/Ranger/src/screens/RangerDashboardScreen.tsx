@@ -144,7 +144,7 @@ export const RangerDashboardScreen: React.FC<RangerDashboardScreenProps> = ({ na
         {/* Ranger Profile Status Strip */}
         <TouchableOpacity
           style={styles.rangerStrip}
-          onPress={() => navigation.navigate('OfficerProfile')}
+          onPress={() => navigation.navigate('RangerProfile')}
           accessible={true}
           accessibilityRole="button"
           accessibilityLabel="View Officer Profile"

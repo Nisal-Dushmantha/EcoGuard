@@ -62,25 +62,41 @@ router.post(
 router.post('/reports', authenticateToken, createConflictReport);
 
 // Conflict Reports list with filters/search/sort
-router.get('/reports', getConflictReports);
+router.get('/reports', authenticateToken, getConflictReports);
 
 // Ranger assigned reports
-router.get('/ranger-assigned/:rangerId?', getRangerAssignedReports);
-router.get('/ranger-assigned', getRangerAssignedReports);
+router.get('/assigned-to-me', authenticateToken, getRangerAssignedReports);
+router.get('/ranger-assigned/:rangerId?', authenticateToken, getRangerAssignedReports);
+router.get('/ranger-assigned', authenticateToken, getRangerAssignedReports);
 
 // Single report details
-router.get('/reports/:reportId', getConflictReportById);
+router.get('/reports/:reportId', authenticateToken, getConflictReportById);
 
 // Verify a pending report
-router.patch('/reports/:reportId/verify', verifyConflictReport);
+router.patch(
+  '/reports/:reportId/verify',
+  authenticateToken,
+  requireRole(['Community Liaison Officer']),
+  verifyConflictReport
+);
 
 // Reject a pending report (body: { reason: string })
-router.patch('/reports/:reportId/reject', rejectConflictReport);
+router.patch(
+  '/reports/:reportId/reject',
+  authenticateToken,
+  requireRole(['Community Liaison Officer']),
+  rejectConflictReport
+);
 
 // Dispatch a verified report (body: { rangerId: string, notes?: string, dispatchedBy?: string })
-router.patch('/reports/:reportId/dispatch', dispatchConflictReport);
+router.patch(
+  '/reports/:reportId/dispatch',
+  authenticateToken,
+  requireRole(['Community Liaison Officer']),
+  dispatchConflictReport
+);
 
 // Update status (e.g. IN_PROGRESS, RESOLVED)
-router.patch('/reports/:reportId/status', updateConflictStatus);
+router.patch('/reports/:reportId/status', authenticateToken, updateConflictStatus);
 
 export default router;

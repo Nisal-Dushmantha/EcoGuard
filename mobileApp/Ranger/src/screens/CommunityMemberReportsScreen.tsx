@@ -276,37 +276,6 @@ export const CommunityMemberReportsScreen: React.FC<CommunityMemberReportsProps>
         />
       )}
 
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.replace('CommunityMemberDashboard')}
-        >
-          <Text style={styles.navIcon}>🏠</Text>
-          <Text style={styles.navLabel}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItemActive}>
-          <Text style={styles.navIconActive}>📋</Text>
-          <Text style={styles.navLabelActive}>My Reports</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.centerFab}
-          onPress={() => navigation.navigate('ReportWildlifeConflict')}
-          activeOpacity={0.88}
-        >
-          <Text style={styles.centerFabIcon}>＋</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('OfficerProfile')}
-        >
-          <Text style={styles.navIcon}>👤</Text>
-          <Text style={styles.navLabel}>Profile</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };

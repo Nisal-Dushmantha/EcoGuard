@@ -360,7 +360,7 @@ export const ConflictActivityScreen: React.FC<ConflictActivityScreenProps> = ({ 
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.avatarCircle}
-            onPress={() => navigation.navigate('OfficerProfile')}
+            onPress={() => navigation.navigate('LiaisonOfficerProfile')}
           >
             <Text style={styles.avatarText}>
               {officerName ? officerName.substring(0, 2).toUpperCase() : 'CO'}
@@ -501,30 +501,6 @@ export const ConflictActivityScreen: React.FC<ConflictActivityScreenProps> = ({ 
           <View style={{ height: 24 }} />
         </ScrollView>
       )}
-
-      {/* ── 7. Bottom Navigation (Exact match to Operations & Reports) ─────── */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('ConflictOperationsHome')}
-        >
-          <Text style={styles.navIcon}>🛡</Text>
-          <Text style={styles.navLabel}>Operations</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('PendingReports')}
-        >
-          <Text style={styles.navIcon}>📋</Text>
-          <Text style={styles.navLabel}>Reports</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItemActive}>
-          <Text style={styles.navIconActive}>🕒</Text>
-          <Text style={styles.navLabelActive}>Activity</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };
