@@ -135,7 +135,7 @@ jest.mock('expo-location', () => ({
     High: 4,
     Low: 1,
   },
-}));
+}), { virtual: true });
 
 // Mock expo-constants
 jest.mock('expo-constants', () => ({

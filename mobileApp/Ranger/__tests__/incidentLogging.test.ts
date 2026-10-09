@@ -9,6 +9,7 @@ import { SYNC_STATUS } from '../src/constants/syncStatus';
 import { LocalIncidentRecord } from '../src/types/incident';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as Location from 'expo-location';
 
 describe('UC01 – Ranger Incident Logging Comprehensive Test Suite', () => {
   beforeEach(async () => {
@@ -812,6 +813,7 @@ describe('UC01 – Ranger Incident Logging Comprehensive Test Suite', () => {
 
   // TEST 34: LocationService with navigator.geolocation success
   test('Test 34: LocationService retrieves position from navigator.geolocation when available', async () => {
+    jest.spyOn(Location, 'requestForegroundPermissionsAsync').mockRejectedValueOnce(new Error('expo unavailable'));
     const originalNavigator = (global as any).navigator;
     (global as any).navigator = {
       geolocation: {
@@ -837,6 +839,7 @@ describe('UC01 – Ranger Incident Logging Comprehensive Test Suite', () => {
 
   // TEST 35: LocationService with navigator.geolocation error codes
   test('Test 35: LocationService handles geolocation error codes 1, 2, and 3', async () => {
+    jest.spyOn(Location, 'requestForegroundPermissionsAsync').mockRejectedValue(new Error('expo unavailable'));
     const originalNavigator = (global as any).navigator;
 
     // Code 1: Permission denied
