@@ -68,6 +68,11 @@
     },
     "testMatch": [
       "**/__tests__/**/*.(spec|test).[jt]s?(x)"
+    ],
+    "coverageReporters": [
+      "text",
+      "text-summary",
+      "lcovonly"
     ]
   }
 }
