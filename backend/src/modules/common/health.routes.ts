@@ -3,8 +3,11 @@ import mongoose from 'mongoose';
 
 const router = Router();
 
-// Health check endpoint
-router.get('/health', (_req: Request, res: Response) => {
+/**
+ * @route   GET /api/health
+ * @desc    System health check and DB status
+ */
+router.get('/', (_req: Request, res: Response) => {
   const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
   res.status(200).json({
     status: 'ok',
