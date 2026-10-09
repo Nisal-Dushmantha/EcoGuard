@@ -424,8 +424,12 @@ export const LiveMap: React.FC<LiveMapProps> = ({
                       </circle>
                     )}
 
+                    {/* Invisible Hitbox for smooth hover targeting without edge drops */}
+                    <circle cx="0" cy="0" r="18" fill="transparent" pointerEvents="all" />
+
                     {/* Outer Target Ring */}
                     <circle
+                      className="animal-pin-ring"
                       cx="0"
                       cy="0"
                       r={isSelected ? 14 : 10}
@@ -435,7 +439,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
                     />
 
                     {/* Inner Species Dot */}
-                    <circle cx="0" cy="0" r="5" fill={pinColor} />
+                    <circle className="animal-pin-dot" cx="0" cy="0" r="5" fill={pinColor} />
 
                     {/* Heading Vector Needle */}
                     {animal.currentLocation.heading !== undefined && (

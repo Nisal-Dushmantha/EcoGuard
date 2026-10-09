@@ -62,6 +62,8 @@ export const AlertDetailsModal: React.FC<AlertDetailsModalProps> = ({
     return `${hours}h ${diff % 60}m ago`;
   };
 
+  const isBattery = /battery/i.test(alert.triggerReason) || alert.alertId.includes('BAT');
+
   const severityClass =
     alert.severity === 'High Risk'
       ? 'high-risk'
@@ -75,8 +77,8 @@ export const AlertDetailsModal: React.FC<AlertDetailsModalProps> = ({
         {/* Modal Header */}
         <div className="modal-header">
           <h2>
-            <Icon name="bell" size={20} />
-            Alert Details & Incident Triage
+            <Icon name={isBattery ? 'battery' : 'bell'} size={20} />
+            {isBattery ? 'Collar Battery Alert & Maintenance Triage' : 'Alert Details & Incident Triage'}
           </h2>
           <button className="modal-close-btn" onClick={onClose} aria-label="Close modal">
             <Icon name="close" size={20} />
@@ -90,8 +92,12 @@ export const AlertDetailsModal: React.FC<AlertDetailsModalProps> = ({
             <span className={`pulse-dot ${severityClass}`} style={{ marginTop: 4 }} />
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <strong style={{ fontSize: 15 }}>{alert.alertId} — {alert.zoneName}</strong>
-                <span className={`status-pill ${severityClass}`}>{alert.severity}</span>
+                <strong style={{ fontSize: 15 }}>
+                  {alert.alertId} — {isBattery ? 'Collar Battery Diagnostic' : alert.zoneName}
+                </strong>
+                <span className={`status-pill ${severityClass}`}>
+                  {isBattery ? '🔋 Low Battery' : alert.severity}
+                </span>
               </div>
               <p style={{ margin: 0, fontSize: 13, opacity: 0.9 }}>{alert.triggerReason}</p>
             </div>
@@ -104,7 +110,7 @@ export const AlertDetailsModal: React.FC<AlertDetailsModalProps> = ({
               <div className="detail-block-title">Tracked Animal Profile</div>
               <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10 }}>
                 <div className={`animal-avatar ${severityClass}`} style={{ width: 44, height: 44 }}>
-                  <Icon name="paw" size={22} />
+                  <Icon name={isBattery ? 'battery' : 'paw'} size={22} />
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 15, color: 'var(--text-main)' }}>{alert.animalName}</h3>
@@ -117,7 +123,7 @@ export const AlertDetailsModal: React.FC<AlertDetailsModalProps> = ({
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, fontSize: 11, background: 'var(--bg-card)', padding: 8, borderRadius: 6 }}>
                   <div>
                     <span style={{ color: 'var(--text-dim)', display: 'block' }}>Battery</span>
-                    <strong>{animal.batteryLevel}%</strong>
+                    <strong style={{ color: animal.batteryLevel < 50 ? '#ffb703' : 'inherit' }}>{animal.batteryLevel}%</strong>
                   </div>
                   <div>
                     <span style={{ color: 'var(--text-dim)', display: 'block' }}>Speed</span>
@@ -162,7 +168,9 @@ export const AlertDetailsModal: React.FC<AlertDetailsModalProps> = ({
           {/* Mini Radar / Geofence Visualization */}
           <div className="detail-block">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <div className="detail-block-title" style={{ margin: 0 }}>Live Geofence Telemetry Preview</div>
+              <div className="detail-block-title" style={{ margin: 0 }}>
+                {isBattery ? 'Collar Battery Diagnostic & Recommended Field SOP' : 'Live Geofence Telemetry Preview'}
+              </div>
               {onFocusOnMap && (
                 <button
                   className="panel-action-btn"
@@ -175,37 +183,51 @@ export const AlertDetailsModal: React.FC<AlertDetailsModalProps> = ({
                 </button>
               )}
             </div>
-            <div className="mini-map-preview">
-              <svg width="100%" height="100%" viewBox="0 0 400 140" style={{ display: 'block' }}>
-                <defs>
-                  <pattern id="grid-pattern-mini" width="20" height="20" patternUnits="userSpaceOnUse">
-                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
-                  </pattern>
-                  <radialGradient id="alertGlow" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="#e63946" stopOpacity="0.6" />
-                    <stop offset="100%" stopColor="#e63946" stopOpacity="0" />
-                  </radialGradient>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#grid-pattern-mini)" />
-                {/* Geofence polygon */}
-                <polygon
-                  points="50,20 350,30 380,120 40,110"
-                  fill="rgba(230, 57, 70, 0.12)"
-                  stroke="#e63946"
-                  strokeWidth="2"
-                  strokeDasharray="4 3"
-                />
-                <text x="60" y="40" fill="#e63946" fontSize="10" fontWeight="600" opacity="0.8">
-                  HIGH-RISK GEOFENCE: {alert.zoneName}
-                </text>
-                {/* Animal ping position */}
-                <circle cx="210" cy="75" r="22" fill="url(#alertGlow)" />
-                <circle cx="210" cy="75" r="8" fill="#e63946" stroke="#ffffff" strokeWidth="2" />
-                <text x="225" y="80" fill="#ffffff" fontSize="11" fontWeight="700">
-                  {alert.animalName} ({alert.animalId})
-                </text>
-              </svg>
-            </div>
+            {isBattery ? (
+              <div style={{ background: 'rgba(255, 183, 3, 0.08)', border: '1px solid rgba(255, 183, 3, 0.25)', borderRadius: 8, padding: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <Icon name="battery" size={20} />
+                  <strong style={{ color: '#ffb703', fontSize: 13 }}>Recommended Standard Operating Procedure (SOP):</strong>
+                </div>
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: 'var(--text-main)', lineHeight: 1.6 }}>
+                  <li>Dispatch field ranger / veterinary mobile unit with replacement GPS collar unit (Model: VHF/GPS-940).</li>
+                  <li>Inspect solar harvesting surface for dirt, mud, or heavy canopy shade obstruction.</li>
+                  <li>Verify telemetry ping frequency to conserve reserve battery cells until interception.</li>
+                </ul>
+              </div>
+            ) : (
+              <div className="mini-map-preview">
+                <svg width="100%" height="100%" viewBox="0 0 400 140" style={{ display: 'block' }}>
+                  <defs>
+                    <pattern id="grid-pattern-mini" width="20" height="20" patternUnits="userSpaceOnUse">
+                      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+                    </pattern>
+                    <radialGradient id="alertGlow" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stopColor="#e63946" stopOpacity="0.6" />
+                      <stop offset="100%" stopColor="#e63946" stopOpacity="0" />
+                    </radialGradient>
+                  </defs>
+                  <rect width="100%" height="100%" fill="url(#grid-pattern-mini)" />
+                  {/* Geofence polygon */}
+                  <polygon
+                    points="50,20 350,30 380,120 40,110"
+                    fill="rgba(230, 57, 70, 0.12)"
+                    stroke="#e63946"
+                    strokeWidth="2"
+                    strokeDasharray="4 3"
+                  />
+                  <text x="60" y="40" fill="#e63946" fontSize="10" fontWeight="600" opacity="0.8">
+                    HIGH-RISK GEOFENCE: {alert.zoneName}
+                  </text>
+                  {/* Animal ping position */}
+                  <circle cx="210" cy="75" r="22" fill="url(#alertGlow)" />
+                  <circle cx="210" cy="75" r="8" fill="#e63946" stroke="#ffffff" strokeWidth="2" />
+                  <text x="225" y="80" fill="#ffffff" fontSize="11" fontWeight="700">
+                    {alert.animalName} ({alert.animalId})
+                  </text>
+                </svg>
+              </div>
+            )}
           </div>
 
           {/* Acknowledgement Status & Action Section */}

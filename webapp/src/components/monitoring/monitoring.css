@@ -517,11 +517,24 @@
 
 .animal-pin-marker {
   cursor: pointer;
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.animal-pin-marker:hover {
+.animal-pin-marker .animal-pin-ring,
+.animal-pin-marker .animal-pin-dot {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), stroke-width 0.2s ease, filter 0.2s ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.animal-pin-marker:hover .animal-pin-ring {
   transform: scale(1.25);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 6px rgba(46, 196, 182, 0.5));
+}
+
+.animal-pin-marker:hover .animal-pin-dot {
+  transform: scale(1.25);
+  filter: brightness(1.25);
 }
 
 .animal-pin-label {
@@ -529,6 +542,11 @@
   font-weight: 600;
   fill: var(--text-main);
   pointer-events: none;
+  transition: font-weight 0.2s ease;
+}
+
+.animal-pin-marker:hover .animal-pin-label {
+  font-weight: 700;
 }
 
 /* ================== Map Pin Popup Overlay ================== */

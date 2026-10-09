@@ -106,17 +106,22 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
         </div>
 
         {/* Low Battery Collars */}
-        <div className="kpi-card">
+        <div
+          className="kpi-card"
+          onClick={() => onChangeTab('alerts')}
+          style={{ cursor: 'pointer' }}
+          title="Click to view collar battery alerts"
+        >
           <div className="kpi-top">
             <span className="kpi-label">Collar Battery Status</span>
-            <div className="kpi-icon-wrap safe">
+            <div className={`kpi-icon-wrap ${(overview?.lowBatteryCollars || animals.filter((a) => a.batteryLevel < 50).length) > 0 ? 'warning' : 'safe'}`}>
               <Icon name="battery" size={18} />
             </div>
           </div>
           <div className="kpi-value">
             {overview?.lowBatteryCollars || animals.filter((a) => a.batteryLevel < 50).length}
           </div>
-          <div className="kpi-subtext">Collars &lt;50% charge</div>
+          <div className="kpi-subtext">Collars &lt;50% charge • Click to view</div>
         </div>
       </div>
 
@@ -153,7 +158,7 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
             <div className="panel-header">
               <div className="panel-title">
                 <Icon name="bell" size={17} />
-                <span>Active Geofence Breaches</span>
+                <span>Active Incidents & Alerts</span>
                 {activeAlerts.length > 0 && (
                   <span className="tab-badge danger">{activeAlerts.length}</span>
                 )}
@@ -168,47 +173,57 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
               <div style={{ textAlign: 'center', padding: '24px 10px', color: 'var(--text-muted)' }}>
                 <Icon name="check" size={28} />
                 <p style={{ margin: '8px 0 0 0', fontSize: 13 }}>No active breaches detected</p>
-                <small>Park boundaries are secure</small>
+                <small>Park boundaries and collar batteries are healthy</small>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {activeAlerts.slice(0, 3).map((alert) => (
-                  <div
-                    key={alert.alertId}
-                    style={{
-                      background: 'rgba(230, 57, 70, 0.08)',
-                      border: '1px solid rgba(230, 57, 70, 0.3)',
-                      borderRadius: 10,
-                      padding: 12,
-                      cursor: 'pointer',
-                      transition: 'transform 0.15s ease',
-                    }}
-                    onClick={() => onSelectAlert(alert)}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                      <strong style={{ fontSize: 13, color: 'var(--text-main)' }}>{alert.animalName}</strong>
-                      <span className="status-pill high-risk" style={{ fontSize: 9, padding: '2px 6px' }}>
-                        {alert.severity}
-                      </span>
+                {activeAlerts.slice(0, 4).map((alert) => {
+                  const isBattery = /battery/i.test(alert.triggerReason) || alert.alertId.includes('BAT');
+                  return (
+                    <div
+                      key={alert.alertId}
+                      style={{
+                        background: isBattery ? 'rgba(255, 170, 0, 0.08)' : 'rgba(230, 57, 70, 0.08)',
+                        border: isBattery ? '1px solid rgba(255, 170, 0, 0.35)' : '1px solid rgba(230, 57, 70, 0.3)',
+                        borderRadius: 10,
+                        padding: 12,
+                        cursor: 'pointer',
+                        transition: 'transform 0.15s ease',
+                      }}
+                      onClick={() => onSelectAlert(alert)}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <strong style={{ fontSize: 13, color: 'var(--text-main)' }}>{alert.animalName}</strong>
+                          {isBattery && <span style={{ fontSize: 11 }}>🔋</span>}
+                        </div>
+                        <span className={`status-pill ${alert.severity === 'High Risk' ? 'high-risk' : 'warning'}`} style={{ fontSize: 9, padding: '2px 6px' }}>
+                          {isBattery ? 'Low Battery' : alert.severity}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>
+                        {isBattery ? (
+                          <span>Telemetry: <strong style={{ color: '#ffb703' }}>Low Battery Warning</strong></span>
+                        ) : (
+                          <span>Breached: <strong>{alert.zoneName}</strong></span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <small style={{ color: 'var(--text-dim)' }}>{timeAgo(alert.triggeredAt)}</small>
+                        <button
+                          className="btn-primary"
+                          style={{ padding: '4px 10px', fontSize: 11, minHeight: 'auto' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectAlert(alert);
+                          }}
+                        >
+                          Triage & Ack
+                        </button>
+                      </div>
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>
-                      Breached: <strong>{alert.zoneName}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <small style={{ color: 'var(--text-dim)' }}>{timeAgo(alert.triggeredAt)}</small>
-                      <button
-                        className="btn-primary"
-                        style={{ padding: '4px 10px', fontSize: 11, minHeight: 'auto' }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelectAlert(alert);
-                        }}
-                      >
-                        Triage & Ack
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

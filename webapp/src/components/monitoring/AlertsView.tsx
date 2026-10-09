@@ -17,6 +17,7 @@ export const AlertsView: React.FC<AlertsViewProps> = ({
 }) => {
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [severityFilter, setSeverityFilter] = useState<string>('All');
+  const [typeFilter, setTypeFilter] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   const filteredAlerts = alerts.filter((alert) => {
@@ -29,13 +30,21 @@ export const AlertsView: React.FC<AlertsViewProps> = ({
     if (severityFilter !== 'All' && alert.severity !== severityFilter) {
       return false;
     }
+    const isBattery = /battery/i.test(alert.triggerReason) || alert.alertId.includes('BAT');
+    if (typeFilter === 'Battery' && !isBattery) {
+      return false;
+    }
+    if (typeFilter === 'Geofence' && isBattery) {
+      return false;
+    }
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
       const matchId = alert.alertId.toLowerCase().includes(q);
       const matchAnimal = alert.animalName.toLowerCase().includes(q);
       const matchSpecies = alert.species.toLowerCase().includes(q);
       const matchZone = alert.zoneName.toLowerCase().includes(q);
-      if (!matchId && !matchAnimal && !matchSpecies && !matchZone) return false;
+      const matchReason = alert.triggerReason.toLowerCase().includes(q);
+      if (!matchId && !matchAnimal && !matchSpecies && !matchZone && !matchReason) return false;
     }
     return true;
   });
@@ -72,6 +81,8 @@ export const AlertsView: React.FC<AlertsViewProps> = ({
     return `${hours}h ${diff % 60}m ago`;
   };
 
+  const batteryAlertsCount = alerts.filter((a) => /battery/i.test(a.triggerReason) || a.alertId.includes('BAT')).length;
+
   return (
     <div className="alerts-view">
       {/* Filters & Search */}
@@ -82,11 +93,21 @@ export const AlertsView: React.FC<AlertsViewProps> = ({
           </span>
           <input
             type="text"
-            placeholder="Search alerts by ID, animal, zone or species..."
+            placeholder="Search alerts by ID, animal, battery, zone or species..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+
+        <select
+          className="filter-select"
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+        >
+          <option value="All">All Categories ({alerts.length})</option>
+          <option value="Geofence">Geofence / Poaching ({alerts.length - batteryAlertsCount})</option>
+          <option value="Battery">🔋 Collar Low Battery ({batteryAlertsCount})</option>
+        </select>
 
         <select
           className="filter-select"
@@ -137,6 +158,7 @@ export const AlertsView: React.FC<AlertsViewProps> = ({
               {filteredAlerts.map((alert) => {
                 const sevClass = getSeverityClass(alert.severity);
                 const isUnread = alert.status === 'Active';
+                const isBattery = /battery/i.test(alert.triggerReason) || alert.alertId.includes('BAT');
 
                 return (
                   <tr key={alert.alertId} className={isUnread ? 'unread-alert' : ''}>
@@ -145,9 +167,16 @@ export const AlertsView: React.FC<AlertsViewProps> = ({
                         <span className={`pulse-dot ${sevClass}`} />
                         <div>
                           <strong style={{ display: 'block', fontSize: 13 }}>{alert.alertId}</strong>
-                          <span className={`status-pill ${sevClass}`} style={{ fontSize: 9, padding: '2px 6px', marginTop: 2 }}>
-                            {alert.severity}
-                          </span>
+                          <div style={{ display: 'flex', gap: 4, marginTop: 2, flexWrap: 'wrap' }}>
+                            <span className={`status-pill ${sevClass}`} style={{ fontSize: 9, padding: '2px 6px' }}>
+                              {alert.severity}
+                            </span>
+                            {isBattery && (
+                              <span className="status-pill warning" style={{ fontSize: 9, padding: '2px 6px', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                                <Icon name="battery" size={10} /> Low Battery
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -155,7 +184,7 @@ export const AlertsView: React.FC<AlertsViewProps> = ({
                     <td>
                       <div className="alert-animal-cell">
                         <div className={`animal-avatar ${sevClass}`} style={{ width: 32, height: 32, fontSize: 14 }}>
-                          <Icon name="paw" size={16} />
+                          <Icon name={isBattery ? 'battery' : 'paw'} size={16} />
                         </div>
                         <div>
                           <strong>{alert.animalName}</strong>
@@ -168,17 +197,19 @@ export const AlertsView: React.FC<AlertsViewProps> = ({
 
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Icon name="shield" size={14} />
+                        <Icon name={isBattery ? 'battery' : 'shield'} size={14} />
                         <div>
-                          <strong>{alert.zoneName}</strong>
-                          <small style={{ display: 'block', color: 'var(--text-muted)' }}>{alert.park}</small>
+                          <strong>{isBattery ? 'Collar Battery Health' : alert.zoneName}</strong>
+                          <small style={{ display: 'block', color: 'var(--text-muted)' }}>
+                            {alert.park} {isBattery ? `• ${alert.zoneName}` : ''}
+                          </small>
                         </div>
                       </div>
                     </td>
 
                     <td style={{ maxWidth: 280 }}>
                       <span style={{ fontSize: 12, color: 'var(--text-main)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        {alert.triggerReason}
+                        {isBattery ? '🔋 ' : ''}{alert.triggerReason}
                       </span>
                     </td>
 
