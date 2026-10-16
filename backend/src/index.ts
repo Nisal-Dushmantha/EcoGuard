@@ -61,20 +61,25 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
+export { app };
+export default app;
+
 // Start server listening on 0.0.0.0 to accept IPv4, IPv6 localhost, and LAN connections
-const server = app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`🚀 EcoGuard backend server running on http://localhost:${PORT}`);
-  console.log(`💻 WebApp API:   http://localhost:${PORT}/api/webapp/status`);
-  console.log(`📱 Mobile API:   http://localhost:${PORT}/api/mobile/status`);
-  console.log(`📡 Health Check: http://localhost:${PORT}/api/health`);
+if (process.env.NODE_ENV !== 'test') {
+  const server = app.listen(PORT, '0.0.0.0', async () => {
+    console.log(`🚀 EcoGuard backend server running on http://localhost:${PORT}`);
+    console.log(`💻 WebApp API:   http://localhost:${PORT}/api/webapp/status`);
+    console.log(`📱 Mobile API:   http://localhost:${PORT}/api/mobile/status`);
+    console.log(`📡 Health Check: http://localhost:${PORT}/api/health`);
 
-  await connectDB();
-});
+    await connectDB();
+  });
 
-server.on('error', (err: any) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`❌ Port ${PORT} is already in use by another process. Please terminate it or set a different PORT in .env.`);
-  } else {
-    console.error('❌ Server startup error:', err);
-  }
-});
+  server.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${PORT} is already in use by another process. Please terminate it or set a different PORT in .env.`);
+    } else {
+      console.error('❌ Server startup error:', err);
+    }
+  });
+}
