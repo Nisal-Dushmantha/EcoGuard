@@ -2,6 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import { LocalIncidentRecord, RangerUser } from '../types/incident';
 import { API_BASE_URL } from '../config/apiConfig';
 import { photoService } from './photoService';
+import { authService } from './authService';
 
 class IncidentApiService {
   private client: AxiosInstance;
@@ -22,6 +23,20 @@ class IncidentApiService {
       }
       return config;
     });
+
+    this.client.interceptors.response.use(
+      (res) => res,
+      async (err) => {
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          const errMsg = err.response?.data?.error || err.response?.data?.message || '';
+          if (errMsg.toLowerCase().includes('token')) {
+            this.authToken = null;
+            await authService.logout();
+          }
+        }
+        return Promise.reject(err);
+      }
+    );
   }
 
   public setAuthToken(token: string | null) {
@@ -46,6 +61,7 @@ class IncidentApiService {
         const user = response.data.data;
         if (user.token) {
           this.setAuthToken(user.token);
+          await authService.setAuthToken(user.token, user.role, user.name, user.rangerId);
         }
         return user;
       }

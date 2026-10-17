@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import { IncidentService, CreateIncidentDTO } from '../services/incident.service.js';
 import { IncidentType } from '../../../models/Incident.model.js';
 
@@ -219,22 +220,31 @@ export const rangerLogin = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // Default demo ranger credentials for rapid testing & academic evaluation
-    // Supports any valid ranger login or demo: ranger@ecoguard.lk / RN-402 / password123
-    const isDemoRanger =
-      userIdentifier.toLowerCase() === 'ranger@ecoguard.lk' ||
-      userIdentifier.toUpperCase() === 'RN-402' ||
-      userIdentifier.toLowerCase() === 'ranger' ||
-      userIdentifier.includes('@');
+    const resolvedEmail = userIdentifier.includes('@') ? userIdentifier : 'ranger.bandara@ecoguard.lk';
+    const resolvedRangerId = userIdentifier.toUpperCase().startsWith('RN-') ? userIdentifier.toUpperCase() : 'RN-402';
+
+    const secret = process.env.JWT_SECRET || 'ecoguard_jwt_secret_key_2026_university_project';
+    const token = jwt.sign(
+      {
+        id: `ranger-${resolvedRangerId.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+        name: 'Ranger K. Bandara',
+        email: resolvedEmail,
+        role: 'Ranger',
+        assignedPark: 'Yala National Park - Sector 4',
+        officerId: resolvedRangerId,
+      },
+      secret,
+      { expiresIn: '30d' }
+    );
 
     const rangerUser = {
-      rangerId: 'RN-402',
+      rangerId: resolvedRangerId,
       name: 'Ranger K. Bandara',
-      email: userIdentifier.includes('@') ? userIdentifier : 'ranger.bandara@ecoguard.lk',
+      email: resolvedEmail,
       role: 'Ranger',
       assignedPark: 'Yala National Park - Sector 4',
-      badgeNumber: 'WG-2026-904',
-      token: 'jwt_ranger_mock_token_2026_field_ops',
+      badgeNumber: `WG-2026-${resolvedRangerId.replace(/\D/g, '') || '904'}`,
+      token,
     };
 
     res.status(200).json({

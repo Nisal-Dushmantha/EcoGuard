@@ -73,6 +73,27 @@ class ConflictApiService {
       }
       return config;
     });
+
+    // Clear stale token on 401/403
+    this.client.interceptors.response.use(
+      (res) => res,
+      async (err) => {
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          const errMsg = err.response?.data?.error || err.response?.data?.message || '';
+          if (errMsg.toLowerCase().includes('token')) {
+            try {
+              await AsyncStorage.removeItem('@ecoguard_auth_token_v1');
+              await AsyncStorage.removeItem('@ecoguard_auth_role_v1');
+              await AsyncStorage.removeItem('@ecoguard_auth_name_v1');
+              await AsyncStorage.removeItem('@ecoguard_auth_user_id_v1');
+            } catch {
+              // ignore
+            }
+          }
+        }
+        return Promise.reject(err);
+      }
+    );
   }
 
   public setBaseURL(url: string) {

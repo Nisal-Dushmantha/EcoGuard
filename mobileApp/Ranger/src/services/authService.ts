@@ -24,6 +24,19 @@ class AuthService {
       }
       return config;
     });
+
+    this.client.interceptors.response.use(
+      (res) => res,
+      async (err) => {
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          const errMsg = err.response?.data?.error || err.response?.data?.message || '';
+          if (errMsg.toLowerCase().includes('token')) {
+            await this.logout();
+          }
+        }
+        return Promise.reject(err);
+      }
+    );
   }
 
   public async setAuthToken(token: string | null, role?: string | null, name?: string | null, id?: string | null) {

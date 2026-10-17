@@ -22,6 +22,16 @@ class ApiService {
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          const errMsg = data.error || '';
+          if (errMsg.toLowerCase().includes('token') || errMsg.toLowerCase().includes('access denied')) {
+            localStorage.removeItem('ecoguard_token');
+            localStorage.removeItem('ecoguard_user');
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('ecoguard:auth-expired', { detail: { message: errMsg } }));
+            }
+          }
+        }
         throw new Error(data.error || `Server responded with status ${response.status}`);
       }
       return data as T;
@@ -42,6 +52,16 @@ class ApiService {
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          const errMsg = data.error || '';
+          if (errMsg.toLowerCase().includes('token') || errMsg.toLowerCase().includes('access denied')) {
+            localStorage.removeItem('ecoguard_token');
+            localStorage.removeItem('ecoguard_user');
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('ecoguard:auth-expired', { detail: { message: errMsg } }));
+            }
+          }
+        }
         throw new Error(data.error || `Server responded with status ${response.status}`);
       }
       return data as T;

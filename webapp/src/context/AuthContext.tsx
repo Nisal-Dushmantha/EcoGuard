@@ -29,6 +29,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const handleAuthExpired = (e: any) => {
+      setUser(null);
+      setToken(null);
+      setError(e.detail?.message || 'Your session has expired. Please sign in again.');
+    };
+    window.addEventListener('ecoguard:auth-expired', handleAuthExpired);
+    return () => window.removeEventListener('ecoguard:auth-expired', handleAuthExpired);
+  }, []);
+
+  useEffect(() => {
     const initializeAuth = async () => {
       const savedToken = localStorage.getItem('ecoguard_token');
       const savedUser = localStorage.getItem('ecoguard_user');
@@ -43,9 +53,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(res.user);
             localStorage.setItem('ecoguard_user', JSON.stringify(res.user));
           }
-        } catch (err) {
+        } catch (err: any) {
           console.warn('Session verification expired or unreachable:', err);
-          // Keep local session if server is offline or clear if unauthorized
+          if (err?.message && (err.message.toLowerCase().includes('token') || err.message.toLowerCase().includes('access denied'))) {
+            localStorage.removeItem('ecoguard_token');
+            localStorage.removeItem('ecoguard_user');
+            setToken(null);
+            setUser(null);
+            setError('Your session has expired. Please sign in again.');
+          }
         }
       }
       setIsLoading(false);
