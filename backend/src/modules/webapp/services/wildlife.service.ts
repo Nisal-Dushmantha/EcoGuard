@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { CollaredAnimal, ICollaredAnimal } from '../../../models/CollaredAnimal.model.js';
 import { RiskZone, IRiskZone } from '../../../models/RiskZone.model.js';
 import { WildlifeAlert, IWildlifeAlert } from '../../../models/WildlifeAlert.model.js';
@@ -787,70 +788,78 @@ class WildlifeService {
   private inMemoryAlerts: any[] = [...INITIAL_ALERTS];
   private initialized = false;
 
+  private isDbConnected(): boolean {
+    return mongoose.connection.readyState === 1;
+  }
+
   async ensureSeeded() {
     if (this.initialized) return;
     this.initialized = true;
-    try {
-      // Upsert zones
-      for (const z of INITIAL_ZONES) {
-        await RiskZone.findOneAndUpdate({ zoneId: z.zoneId }, { $setOnInsert: z }, { upsert: true }).catch(() => {});
+    if (this.isDbConnected()) {
+      try {
+        // Upsert zones
+        for (const z of INITIAL_ZONES) {
+          await RiskZone.findOneAndUpdate({ zoneId: z.zoneId }, { $setOnInsert: z }, { upsert: true }).catch(() => { });
+        }
+        // Upsert animals
+        for (const a of INITIAL_ANIMALS) {
+          await CollaredAnimal.findOneAndUpdate({ collarId: a.collarId }, { $setOnInsert: a }, { upsert: true }).catch(() => { });
+        }
+        // Upsert alerts
+        for (const al of INITIAL_ALERTS) {
+          await WildlifeAlert.findOneAndUpdate({ alertId: al.alertId }, { $setOnInsert: al }, { upsert: true }).catch(() => { });
+        }
+      } catch {
+        // Use fallback in-memory state smoothly
       }
-      // Upsert animals
-      for (const a of INITIAL_ANIMALS) {
-        await CollaredAnimal.findOneAndUpdate({ collarId: a.collarId }, { $setOnInsert: a }, { upsert: true }).catch(() => {});
-      }
-      // Upsert alerts
-      for (const al of INITIAL_ALERTS) {
-        await WildlifeAlert.findOneAndUpdate({ alertId: al.alertId }, { $setOnInsert: al }, { upsert: true }).catch(() => {});
-      }
-    } catch {
-      // Use fallback in-memory state smoothly
     }
     await this.syncLowBatteryAlerts();
   }
 
   async syncLowBatteryAlerts() {
-    try {
-      const animals = await CollaredAnimal.find({ batteryLevel: { $lt: 50 } }).lean();
-      for (const animal of animals) {
-        const existingAlert = await WildlifeAlert.findOne({
-          collarId: animal.collarId,
-          status: { $in: ['Active', 'Acknowledged'] },
-          triggerReason: { $regex: /battery/i },
-        });
+    if (this.isDbConnected()) {
+      try {
+        const animals = await CollaredAnimal.find({ batteryLevel: { $lt: 50 } }).lean();
+        for (const animal of animals) {
+          const existingAlert = await WildlifeAlert.findOne({
+            collarId: animal.collarId,
+            status: { $in: ['Active', 'Acknowledged'] },
+            triggerReason: { $regex: /battery/i },
+          });
 
-        if (!existingAlert) {
-          const alertId = `ALT-BAT-${animal.collarId.replace(/[^a-zA-Z0-9]/g, '')}`;
-          await WildlifeAlert.findOneAndUpdate(
-            { alertId },
-            {
-              $setOnInsert: {
-                alertId,
-                collarId: animal.collarId,
-                animalId: animal.animalId,
-                animalName: animal.name,
-                species: animal.species,
-                park: animal.park,
-                zoneId: animal.currentZoneId || 'ZONE-YALA-04',
-                zoneName: animal.currentZoneName || 'Primary Reserve Zone',
-                severity: animal.batteryLevel < 20 ? 'High Risk' : 'Warning',
-                status: 'Active',
-                triggerReason: `Collar battery level critical/low (${animal.batteryLevel}% remaining). Solar recharging insufficient; inspection or replacement required.`,
-                location: {
-                  latitude: animal.currentLocation?.latitude || 6.322,
-                  longitude: animal.currentLocation?.longitude || 81.442,
-                  sector: animal.currentZoneName || 'Park Sector',
+          if (!existingAlert) {
+            const alertId = `ALT-BAT-${animal.collarId.replace(/[^a-zA-Z0-9]/g, '')}`;
+            await WildlifeAlert.findOneAndUpdate(
+              { alertId },
+              {
+                $setOnInsert: {
+                  alertId,
+                  collarId: animal.collarId,
+                  animalId: animal.animalId,
+                  animalName: animal.name,
+                  species: animal.species,
+                  park: animal.park,
+                  zoneId: animal.currentZoneId || 'ZONE-YALA-04',
+                  zoneName: animal.currentZoneName || 'Primary Reserve Zone',
+                  severity: animal.batteryLevel < 20 ? 'High Risk' : 'Warning',
+                  status: 'Active',
+                  triggerReason: `Collar battery level critical/low (${animal.batteryLevel}% remaining). Solar recharging insufficient; inspection or replacement required.`,
+                  location: {
+                    latitude: animal.currentLocation?.latitude || 6.322,
+                    longitude: animal.currentLocation?.longitude || 81.442,
+                    sector: animal.currentZoneName || 'Park Sector',
+                  },
+                  triggeredAt: new Date(),
+                  managerNotes: '',
+                  dispatchedRangers: [],
                 },
-                triggeredAt: new Date(),
-                managerNotes: '',
-                dispatchedRangers: [],
               },
-            },
-            { upsert: true }
-          );
+              { upsert: true }
+            );
+          }
         }
-      }
-    } catch {}
+      } catch { }
+    }
 
     // In-memory sync
     for (const animal of this.inMemoryAnimals.filter((a) => a.batteryLevel < 50)) {
@@ -895,15 +904,21 @@ class WildlifeService {
     let zones: any[] = [];
     let alerts: any[] = [];
 
-    try {
-      const animalQuery = park && park !== 'All Parks' ? { park } : {};
-      const zoneQuery = park && park !== 'All Parks' ? { park } : {};
-      const alertQuery = park && park !== 'All Parks' ? { park } : {};
+    if (this.isDbConnected()) {
+      try {
+        const animalQuery = park && park !== 'All Parks' ? { park } : {};
+        const zoneQuery = park && park !== 'All Parks' ? { park } : {};
+        const alertQuery = park && park !== 'All Parks' ? { park } : {};
 
-      animals = await CollaredAnimal.find(animalQuery).lean();
-      zones = await RiskZone.find(zoneQuery).lean();
-      alerts = await WildlifeAlert.find(alertQuery).sort({ triggeredAt: -1 }).lean();
-    } catch {
+        animals = await CollaredAnimal.find(animalQuery).lean();
+        zones = await RiskZone.find(zoneQuery).lean();
+        alerts = await WildlifeAlert.find(alertQuery).sort({ triggeredAt: -1 }).lean();
+      } catch {
+        animals = this.inMemoryAnimals.filter((a) => !park || park === 'All Parks' || a.park === park);
+        zones = this.inMemoryZones.filter((z) => !park || park === 'All Parks' || z.park === park);
+        alerts = this.inMemoryAlerts.filter((al) => !park || park === 'All Parks' || al.park === park);
+      }
+    } else {
       animals = this.inMemoryAnimals.filter((a) => !park || park === 'All Parks' || a.park === park);
       zones = this.inMemoryZones.filter((z) => !park || park === 'All Parks' || z.park === park);
       alerts = this.inMemoryAlerts.filter((al) => !park || park === 'All Parks' || al.park === park);
@@ -966,21 +981,25 @@ class WildlifeService {
   async getAnimals(query: { park?: string; species?: string; status?: string; search?: string }) {
     await this.ensureSeeded();
     let animals: any[] = [];
-    try {
-      const filter: any = {};
-      if (query.park && query.park !== 'All Parks') filter.park = query.park;
-      if (query.species && query.species !== 'All Species') filter.species = query.species;
-      if (query.status && query.status !== 'All Status') filter.status = query.status;
-      if (query.search) {
-        filter.$or = [
-          { name: { $regex: query.search, $options: 'i' } },
-          { animalId: { $regex: query.search, $options: 'i' } },
-          { collarId: { $regex: query.search, $options: 'i' } },
-          { currentZoneName: { $regex: query.search, $options: 'i' } },
-        ];
+    if (this.isDbConnected()) {
+      try {
+        const filter: any = {};
+        if (query.park && query.park !== 'All Parks') filter.park = query.park;
+        if (query.species && query.species !== 'All Species') filter.species = query.species;
+        if (query.status && query.status !== 'All Status') filter.status = query.status;
+        if (query.search) {
+          filter.$or = [
+            { name: { $regex: query.search, $options: 'i' } },
+            { animalId: { $regex: query.search, $options: 'i' } },
+            { collarId: { $regex: query.search, $options: 'i' } },
+            { currentZoneName: { $regex: query.search, $options: 'i' } },
+          ];
+        }
+        animals = await CollaredAnimal.find(filter).sort({ lastPingAt: -1 }).lean();
+      } catch {
+        animals = this.inMemoryAnimals;
       }
-      animals = await CollaredAnimal.find(filter).sort({ lastPingAt: -1 }).lean();
-    } catch {
+    } else {
       animals = this.inMemoryAnimals;
     }
 
@@ -1014,12 +1033,14 @@ class WildlifeService {
 
   async getAnimalById(id: string) {
     await this.ensureSeeded();
-    try {
-      const doc = await CollaredAnimal.findOne({
-        $or: [{ collarId: id }, { animalId: id }, { _id: id }],
-      }).lean();
-      if (doc) return doc;
-    } catch {}
+    if (this.isDbConnected()) {
+      try {
+        const doc = await CollaredAnimal.findOne({
+          $or: [{ collarId: id }, { animalId: id }, { _id: id }],
+        }).lean();
+        if (doc) return doc;
+      } catch { }
+    }
 
     return (
       this.inMemoryAnimals.find(
@@ -1031,10 +1052,14 @@ class WildlifeService {
   async getRiskZones(park?: string) {
     await this.ensureSeeded();
     let zones: any[] = [];
-    try {
-      const query = park && park !== 'All Parks' ? { park } : {};
-      zones = await RiskZone.find(query).lean();
-    } catch {
+    if (this.isDbConnected()) {
+      try {
+        const query = park && park !== 'All Parks' ? { park } : {};
+        zones = await RiskZone.find(query).lean();
+      } catch {
+        zones = this.inMemoryZones;
+      }
+    } else {
       zones = this.inMemoryZones;
     }
 
@@ -1060,21 +1085,25 @@ class WildlifeService {
     await this.ensureSeeded();
     await this.syncLowBatteryAlerts();
     let alerts: any[] = [];
-    try {
-      const filter: any = {};
-      if (query.park && query.park !== 'All Parks') filter.park = query.park;
-      if (query.status && query.status !== 'All') filter.status = query.status;
-      if (query.severity && query.severity !== 'All') filter.severity = query.severity;
-      if (query.search) {
-        filter.$or = [
-          { alertId: { $regex: query.search, $options: 'i' } },
-          { animalName: { $regex: query.search, $options: 'i' } },
-          { animalId: { $regex: query.search, $options: 'i' } },
-          { zoneName: { $regex: query.search, $options: 'i' } },
-        ];
+    if (this.isDbConnected()) {
+      try {
+        const filter: any = {};
+        if (query.park && query.park !== 'All Parks') filter.park = query.park;
+        if (query.status && query.status !== 'All') filter.status = query.status;
+        if (query.severity && query.severity !== 'All') filter.severity = query.severity;
+        if (query.search) {
+          filter.$or = [
+            { alertId: { $regex: query.search, $options: 'i' } },
+            { animalName: { $regex: query.search, $options: 'i' } },
+            { animalId: { $regex: query.search, $options: 'i' } },
+            { zoneName: { $regex: query.search, $options: 'i' } },
+          ];
+        }
+        alerts = await WildlifeAlert.find(filter).sort({ triggeredAt: -1 }).lean();
+      } catch {
+        alerts = this.inMemoryAlerts;
       }
-      alerts = await WildlifeAlert.find(filter).sort({ triggeredAt: -1 }).lean();
-    } catch {
+    } else {
       alerts = this.inMemoryAlerts;
     }
 
@@ -1107,10 +1136,12 @@ class WildlifeService {
 
   async getAlertById(alertId: string) {
     await this.ensureSeeded();
-    try {
-      const doc = await WildlifeAlert.findOne({ alertId }).lean();
-      if (doc) return doc;
-    } catch {}
+    if (this.isDbConnected()) {
+      try {
+        const doc = await WildlifeAlert.findOne({ alertId }).lean();
+        if (doc) return doc;
+      } catch { }
+    }
 
     return this.inMemoryAlerts.find((al) => al.alertId === alertId) || null;
   }
@@ -1130,14 +1161,16 @@ class WildlifeService {
       ...(dispatchedRangers ? { dispatchedRangers } : {}),
     };
 
-    try {
-      const updated = await WildlifeAlert.findOneAndUpdate(
-        { alertId },
-        { $set: updateData },
-        { new: true }
-      ).lean();
-      if (updated) return updated;
-    } catch {}
+    if (this.isDbConnected()) {
+      try {
+        const updated = await WildlifeAlert.findOneAndUpdate(
+          { alertId },
+          { $set: updateData },
+          { new: true }
+        ).lean();
+        if (updated) return updated;
+      } catch { }
+    }
 
     const index = this.inMemoryAlerts.findIndex((al) => al.alertId === alertId);
     if (index !== -1) {
@@ -1160,14 +1193,16 @@ class WildlifeService {
       resolutionNotes: resolutionNotes || 'Situation resolved and animal safe.',
     };
 
-    try {
-      const updated = await WildlifeAlert.findOneAndUpdate(
-        { alertId },
-        { $set: updateData },
-        { new: true }
-      ).lean();
-      if (updated) return updated;
-    } catch {}
+    if (this.isDbConnected()) {
+      try {
+        const updated = await WildlifeAlert.findOneAndUpdate(
+          { alertId },
+          { $set: updateData },
+          { new: true }
+        ).lean();
+        if (updated) return updated;
+      } catch { }
+    }
 
     const index = this.inMemoryAlerts.findIndex((al) => al.alertId === alertId);
     if (index !== -1) {
@@ -1198,18 +1233,20 @@ class WildlifeService {
 
     const newHistory = [newPoint, ...(animal.locationHistory || [])].slice(0, 15);
 
-    try {
-      await CollaredAnimal.findOneAndUpdate(
-        { collarId: animal.collarId },
-        {
-          $set: {
-            currentLocation: newPoint,
-            locationHistory: newHistory,
-            lastPingAt: new Date(),
-          },
-        }
-      );
-    } catch {}
+    if (this.isDbConnected()) {
+      try {
+        await CollaredAnimal.findOneAndUpdate(
+          { collarId: animal.collarId },
+          {
+            $set: {
+              currentLocation: newPoint,
+              locationHistory: newHistory,
+              lastPingAt: new Date(),
+            },
+          }
+        );
+      } catch { }
+    }
 
     const index = this.inMemoryAnimals.findIndex((a) => a.collarId === animal.collarId);
     if (index !== -1) {
